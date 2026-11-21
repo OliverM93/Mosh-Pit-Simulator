@@ -112,6 +112,12 @@ class BVH:
 
     def rest_dir(self, name):
         """Rest direction of a joint's bone (towards its first child / end site), Blender space."""
+        # CMU has zero-length links (e.g. Spine1 -> Neck): follow the first child until a real offset appears.
         j = self.joints[name]
-        off = j.children[0].offset if j.children else (j.end_offset or Vector((0, 1, 0)))
+        while j.children:
+            off = j.children[0].offset
+            if off.length > 1e-6:
+                return (AXIS @ off).normalized()
+            j = j.children[0]
+        off = j.end_offset if j.end_offset is not None and j.end_offset.length > 1e-6 else Vector((0, 1, 0))
         return (AXIS @ off).normalized()

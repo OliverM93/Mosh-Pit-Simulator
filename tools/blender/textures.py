@@ -265,14 +265,38 @@ def project_print(rgb, pos, nrm, print_rgba, center, width, height):
     return rgb * (1 - a[..., None]) + px[..., :3] * a[..., None]
 
 
-def paint_shirt(pos, nrm, ao, valid, lm, color, print_text=None, ink=(0.93, 0.93, 0.9)):
+def paint_shirt(pos, nrm, ao, valid, lm, color, print_text=None, ink=(0.93, 0.93, 0.9), pattern='plain'):
     shape = valid.shape
     rgb = np.broadcast_to(srgb(color), shape + (3,)).copy()
+    x, z = pos[..., 0], pos[..., 2]
+    if pattern == 'pinstripe':
+        rgb = mix(rgb, srgb((0.1, 0.13, 0.3)), (np.abs(np.sin(x * 260)) > 0.93).astype(np.float32))
+        rgb = mix(rgb, srgb((0.1, 0.13, 0.3)), blob(pos, (-0.06, -0.2, lm['chest_z'] + 0.02), (0.035, 0.3, 0.035)) * 0.9)
+    elif pattern == 'flannel':
+        bands = ((np.sin(x * 70) > 0.3).astype(np.float32) + (np.sin(z * 70) > 0.3).astype(np.float32))
+        rgb *= (1 - 0.32 * bands)[..., None]
+        rgb = mix(rgb, srgb((0.85, 0.8, 0.7)), ((np.abs(np.sin(x * 70)) < 0.06) | (np.abs(np.sin(z * 70)) < 0.06)) * 0.35)
     rgb *= (1 + uv_noise(shape, 160, 0.06) + uv_noise(shape, 24, 0.05))[..., None]
     if print_text:
         pr = text_image(print_text, color=tuple(int(c * 255) for c in ink) + (255,))
         rgb = project_print(rgb, pos, nrm, pr, (0, 0, lm['chest_z']), 0.26, 0.13)
     return to_image('ShirtTex', rgb, valid, ao, 0.65)
+
+
+def paint_pants(pos, nrm, ao, valid, lm, fabric, color):
+    if fabric == 'denim':
+        return paint_denim(pos, nrm, ao, valid, lm, color)
+    shape = valid.shape
+    if fabric == 'camo':
+        rgb = np.broadcast_to(srgb((0.32, 0.36, 0.22)), shape + (3,)).copy()
+        for col, cells, thr in (((0.2, 0.17, 0.11), 18, 0.12), ((0.12, 0.14, 0.09), 26, 0.15), ((0.45, 0.42, 0.3), 34, 0.18)):
+            rgb = mix(rgb, srgb(col), smooth01(thr - 0.03, thr + 0.03, uv_noise(shape, cells, 1.0)))
+    else:
+        rgb = np.broadcast_to(srgb(color), shape + (3,)).copy()
+    rgb *= (1 + uv_noise(shape, 140, 0.07))[..., None]
+    if fabric == 'track':
+        rgb = mix(rgb, srgb((0.9, 0.9, 0.9)), (np.abs(nrm[..., 0]) > 0.93).astype(np.float32))
+    return to_image('PantsTex', rgb, valid, ao, 0.7)
 
 
 def paint_denim(pos, nrm, ao, valid, lm, color=(0.16, 0.25, 0.42)):
@@ -307,10 +331,13 @@ def paint_shoes(pos, nrm, ao, valid, color=(0.92, 0.92, 0.9)):
     return to_image('ShoesTex', rgb, valid, ao, 0.6)
 
 
-def paint_cap(pos, nrm, ao, valid, color, logo=None):
+def paint_cap(pos, nrm, ao, valid, color, logo=None, knit=False):
     shape = valid.shape
     rgb = np.broadcast_to(srgb(color), shape + (3,)).copy()
     rgb *= (1 + uv_noise(shape, 120, 0.05))[..., None]
+    if knit:  # vertical ribs
+        ang = np.arctan2(pos[..., 0], pos[..., 1])
+        rgb *= (0.85 + 0.15 * (np.sin(ang * 60) > 0))[..., None]
     if logo:
         pr = text_image(logo, (256, 256))
         c = (0, 0, float(np.percentile(pos[..., 2][valid], 40)))

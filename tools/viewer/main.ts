@@ -1,12 +1,12 @@
 /**
- * Dev-only model viewer: `npm run dev` → http://localhost:5173/viewer.html?model=proto&clip=spinkick
+ * Dev-only model viewer: `npm run dev` → http://localhost:5173/viewer.html?model=player&clip=spinkick (&t=0.4 freezes at phase t/1.2)
  * Shows a character GLB with its animations under concert-style lighting.
  */
 import * as THREE from 'three';
-import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { CharacterLibrary, type SkinnedCharacter } from '../../src/render/characters';
 
 const params = new URLSearchParams(location.search);
-const model = params.get('model') ?? 'proto';
+const model = params.get('model') ?? 'player';
 
 const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setPixelRatio(Math.min(2, devicePixelRatio));
@@ -49,37 +49,29 @@ floor.receiveShadow = true;
 scene.add(floor);
 
 const clock = new THREE.Clock();
-let mixer: THREE.AnimationMixer | null = null;
 const ui = document.getElementById('ui')!;
+const lib = new CharacterLibrary();
+let char: SkinnedCharacter | null = null;
+let clipName = params.get('clip') ?? 'idle';
+let time = 0;
+const frozen = params.has('t');
 
-new GLTFLoader().load(`./models/${model}.glb`, (gltf) => {
-  const root = gltf.scene;
-  root.traverse((o) => {
-    if ((o as THREE.Mesh).isMesh) {
-      o.castShadow = true;
-      o.receiveShadow = true;
-    }
-  });
-  scene.add(root);
-  mixer = new THREE.AnimationMixer(root);
-  const actions = new Map(gltf.animations.map((c) => [c.name, mixer!.clipAction(c)]));
-  const play = (name: string) => {
-    mixer!.stopAllAction();
-    actions.get(name)?.reset().play();
-  };
-  for (const name of actions.keys()) {
+lib.load('./models/').then(() => {
+  char = lib.create(model);
+  char.setShadows(true, true);
+  scene.add(char.object);
+  const names = ['idle', 'walk', 'run', 'two_step', 'forward_arms', 'side_arms', 'pick_up_change', 'crowd_push', 'spinkick', 'floorwork',
+    'cartwheel', 'hop', 'tornado_kick', 'butterfly_kick', 'bail', 'cheer', 'headbang', 'bob', 'fist_pump', 'arms_crossed', 'band_drums'];
+  for (const name of names) {
     const b = document.createElement('button');
     b.textContent = name;
-    b.onclick = () => play(name);
+    b.onclick = () => {
+      clipName = name;
+      time = 0;
+    };
     ui.appendChild(b);
   }
-  const first = params.get('clip') ?? gltf.animations[0]?.name;
-  if (first) play(first);
-  const t = Number(params.get('t'));
-  if (!Number.isNaN(t) && params.has('t')) {
-    mixer.update(t);
-    mixer.timeScale = 0;
-  }
+  if (frozen) time = Number(params.get('t'));
   (window as unknown as { viewerReady: boolean }).viewerReady = true;
 });
 
@@ -89,6 +81,12 @@ addEventListener('resize', () => {
   camera.updateProjectionMatrix();
 });
 renderer.setAnimationLoop(() => {
-  mixer?.update(clock.getDelta());
+  const dt = clock.getDelta();
+  if (char) {
+    if (!frozen) time += dt;
+    char.play(clipName, clipName, 0.2);
+    char.setPhase(time / 1.2, true);
+    char.update(dt);
+  }
   renderer.render(scene, camera);
 });

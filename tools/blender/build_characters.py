@@ -20,8 +20,9 @@ from mathutils import Vector, kdtree
 
 sys.path.insert(0, os.path.dirname(__file__))
 from mh import BaseMesh, Skeleton, to_blender  # noqa: E402
-from retarget import retarget  # noqa: E402
+from retarget import retarget, retarget_keyframes  # noqa: E402
 import textures as tx  # noqa: E402
+from variants import VARIANTS  # noqa: E402
 
 # ---------------------------------------------------------------- body presets
 
@@ -36,10 +37,28 @@ BODY = {
 }
 
 
-# (clip name, BVH file, first frame, last frame, strip horizontal travel)
+# Motion capture clips: (clip name, BVH file, first frame, last frame, mirrored copy "<name>_m")
 CLIPS = [
+    ('idle', '082/82_08.bvh', 100, 400, False),
+    ('walk', '002/02_01.bvh', 100, 232, False),
+    ('run', '009/09_01.bvh', 40, 112, False),
     ('spinkick', '088/88_06.bvh', 22, 125, True),
     ('cartwheel', '090/90_02.bvh', 325, 520, True),
+    ('tornado_kick', '087/87_01.bvh', 140, 300, True),
+    ('butterfly_kick', '090/90_05.bvh', 165, 345, True),
+    ('floorwork', '090/90_28.bvh', 340, 500, True),
+    ('bail', '090/90_16.bvh', 330, 500, False, {'max_rise': 0.05}),
+    ('cheer', '079/79_69.bvh', 110, 300, False),
+    ('hop', '013/13_39.bvh', 130, 230, False),
+]
+
+# Hand-keyed clips (src/animation/clips.ts → keyframe_clips.json): (clip id, mirrored copy)
+KEY_CLIPS = [
+    ('two_step', True), ('crowd_push', False), ('forward_arms', False), ('side_arms', False),
+    ('pick_up_change', False), ('bob', False), ('headbang', False), ('fist_pump', False), ('arms_crossed', False),
+    ('jump_cheer', False), ('ooh', False), ('shove', False), ('stumble', False), ('surf', False),
+    ('band_vocals', False), ('band_vocals_heavy', False), ('band_guitar', False), ('band_guitar_heavy', False),
+    ('band_drums', False),
 ]
 
 
@@ -223,14 +242,18 @@ def main():
     ap.add_argument('--out', required=True)
     ap.add_argument('--preview', default='')
     ap.add_argument('--cmu', default='', help='cmu-mocap data dir (BVH)')
+    ap.add_argument('--keyclips', default='', help='keyframe_clips.json exported from src/animation/clips.ts')
     ap.add_argument('--anim-preview', default='')
     ap.add_argument('--tex', type=int, default=1024, help='body texture size (0 = untextured)')
-    ap.add_argument('--no-cap', action='store_true')
+    ap.add_argument('--no-cap', action='store_true', help='(debug) drop the headwear')
+    ap.add_argument('--variant', default='player', choices=sorted(VARIANTS))
+    ap.add_argument('--anims-only', action='store_true', help='export skeleton + clips only (anims.glb)')
     args = ap.parse_args(sys.argv[sys.argv.index('--') + 1:] if '--' in sys.argv else sys.argv[1:])
 
     clear_scene()
+    spec = VARIANTS[args.variant]
     mesh = BaseMesh(args.mh)
-    for path, w in BODY['brute']:
+    for path, w in spec['body']:
         mesh.apply_target(path, w)
     # Stand on the floor: feet at z = 0.
     floor_y = min(mesh.verts[i][1] for i in mesh.group_verts('body'))
@@ -243,6 +266,10 @@ def main():
 
     rig = build_armature(sk, mesh)
     jp = lambda name: Vector(to_blender(sk.joint_pos(mesh, name)))  # noqa: E731
+
+    if args.anims_only:
+        export_anims(args, rig)
+        return
 
     # Body without the feet (hidden inside the sneakers – avoids toes poking through).
     ankle_cut = jp('foot.L____head').z + 0.01
@@ -265,14 +292,15 @@ def main():
     shirt = cut_clothing('Shirt', full, [
         (Vector((0, 0, hip_z - 0.07)), Vector((0, 0, -1))),                        # hem
         (neck + Vector((0, 0.0, -0.005)), Vector((0, -0.55, 1)).normalized()),    # crew neck, lower in front
-        (sh_l + (el_l - sh_l) * 0.5, (el_l - sh_l).normalized(), lambda co: co.x > sh_l.x - 0.02),  # short sleeves
-        (sh_r + (el_r - sh_r) * 0.5, (el_r - sh_r).normalized(), lambda co: co.x < sh_r.x + 0.02),
-    ], keep_near=neck + Vector((0, 0, -0.2)), smooth=4)
+    ] + sleeve_planes(spec['shirt']['sleeves'], jp), keep_near=neck + Vector((0, 0, -0.2)), smooth=4)
+    long_sleeves = spec['shirt']['sleeves'] == 'long'
+    wr_l, wr_r = jp('wrist.L____head'), jp('wrist.R____head')
     spine_axis = (Vector((0, neck.y, hip_z - 0.1)), neck)
 
     def shirt_center(co):
         best = None
-        for a, b in [spine_axis, (sh_l, el_l), (sh_r, el_r)]:
+        arms = [(sh_l, wr_l), (sh_r, wr_r)] if long_sleeves else [(sh_l, el_l), (sh_r, el_r)]
+        for a, b in [spine_axis] + arms:
             c, _ = closest_on_segment(co, a, b)
             if best is None or (co - c).length < (co - best).length:
                 best = c
@@ -280,16 +308,18 @@ def main():
 
     bm = bmesh.new()
     bm.from_mesh(shirt.data)
-    radial_push(bm, shirt_center, lambda co: 1.11)
+    radial_push(bm, shirt_center, lambda co: spec['shirt']['fit'])
     inflate(bm, 0.009)
     bm.to_mesh(shirt.data)
     bm.free()
     transfer_weights(shirt, full, full_used, weights, rig)
 
     legs = [(jp('upperleg01.L____head'), jp('foot.L____head')), (jp('upperleg01.R____head'), jp('foot.R____head'))]
+    cut = spec['pants']['cut']
+    hem_z = jp('lowerleg01.L____head').z - 0.07 if cut == 'shorts' else ankle_z + 0.025
     pants = cut_clothing('Pants', full, [
         (Vector((0, 0, waist_z)), Vector((0, 0, 1))),                               # waistband
-        (Vector((0, 0, ankle_z + 0.025)), Vector((0, 0, -1))),                      # hems
+        (Vector((0, 0, hem_z)), Vector((0, 0, -1))),                                # hems
     ], keep_near=Vector((0, legs[0][0].y, hip_z - 0.1)), smooth=1, drop_arms=(sh_l, sh_r, hip_z))
     bm = bmesh.new()
     bm.from_mesh(pants.data)
@@ -304,8 +334,9 @@ def main():
         c = min(cands, key=lambda q: (v.co - q).length)
         d = v.co - c
         t = max(0.0, min(1.0, (hip_z - v.co.z) / (hip_z - bottom)))
-        target = 0.088 + 0.012 * t + (0.006 if v.co.z < knee_z else 0)
-        v.co = c + d.normalized() * max(d.length * 1.15, target * (0.85 + 0.15 * abs(d.normalized().x)))
+        target = 0.0 if cut == 'slim' else (0.088 + 0.012 * t + (0.006 if v.co.z < knee_z else 0))
+        loose = 1.1 if cut == 'slim' else 1.15
+        v.co = c + d.normalized() * max(d.length * loose, target * (0.85 + 0.15 * abs(d.normalized().x)))
     inflate(bm, 0.006)
     bm.to_mesh(pants.data)
     bm.free()
@@ -351,50 +382,48 @@ def main():
     shoes = shoe_objs[0]
     shoes.name = 'Shoes'
 
-    # ---- Cap: crown of the scalp, pushed out, plus a flat brim.
-    brow_z = jp('head____head').z + 0.1
-    head_c = jp('head____head') + Vector((0, 0, 0.1))
-    cap, cap_used = subset_mesh('Cap', mesh, 'body', P,
-                                lambda i: to_blender(P[i])[2] > brow_z and dom(i) in ('head', 'neck03'))
-    bm = bmesh.new()
-    bm.from_mesh(cap.data)
-    radial_push(bm, lambda co: head_c, lambda co: 1.07)
-    bm.to_mesh(cap.data)
-    bm.free()
-    front_y = min(v.co.y for v in cap.data.vertices)
-    bpy.ops.mesh.primitive_cube_add(size=1)
-    brim = bpy.context.active_object
-    brim.name = 'Brim'
-    brim.scale = (0.17, 0.1, 0.01)
-    brim.location = (head_c.x, front_y - 0.04, brow_z + 0.008)
-    bpy.ops.object.transform_apply(location=True, scale=True)
-    bpy.ops.object.select_all(action='DESELECT')
-    brim.select_set(True)
-    cap.select_set(True)
-    bpy.context.view_layer.objects.active = cap
-    bpy.ops.object.join()
-    skin(cap, rig, [], {}, override='head')
+    cap = build_headwear(spec['head'], mesh, P, dom, jp, rig)
 
-    objs = [body, eyes, shirt, pants, shoes] + ([] if args.no_cap else [cap])
-    if args.no_cap:
+    if cap and args.no_cap:
         bpy.data.objects.remove(cap)
+        cap = None
+    objs = [body, eyes, shirt, pants, shoes] + ([cap] if cap else [])
+    hide_covered(body, [shirt, pants, shoes])
+    if spec['lod'] < 1:
+        decimate(body, spec['lod'])
+        decimate(shoes, 0.5)  # closed shapes: no hems to fray  # clothes keep their clean hems
     if args.tex:
         lm = landmarks(mesh, sk, P, jp)
-        texture_all(args.tex, lm, body, eyes, shirt, pants, shoes, None if args.no_cap else cap)
+        texture_all(spec['tex'] if args.tex == 1024 else args.tex, lm, spec, body, eyes, shirt, pants, shoes, cap)
     else:
         assign_materials(objs)
 
     clips = []
     if args.cmu:
-        for name, file, start, end, in_place in CLIPS:
-            act, n, dt = retarget(rig, os.path.join(args.cmu, file), start, end, name, in_place=in_place)
-            clips.append((act, n))
+        only = os.environ.get('MOSH_CLIPS', '').split(',') if os.environ.get('MOSH_CLIPS') else None
+        for name, file, start, end, mirrored, *opt in CLIPS:
+            if only and name not in only:
+                continue
+            for m in ([False, True] if mirrored else [False]):
+                act, n, dt = retarget(rig, os.path.join(args.cmu, file), start, end, name + ('_m' if m else ''), mirror=m, **(opt[0] if opt else {}))
+                clips.append((act, n))
             print(f'clip {name}: {n} keys, {n * dt:.2f}s')
+    if args.keyclips:
+        import json
+        with open(args.keyclips) as f:
+            data = json.load(f)
+        for cid, mirrored in KEY_CLIPS:
+            for m in ([False, True] if mirrored else [False]):
+                act, n = retarget_keyframes(rig, data, cid, cid + ('_m' if m else ''), mirror=m)
+                clips.append((act, n))
+        print(f'keyframe clips: {len(KEY_CLIPS)}')
     if args.anim_preview and clips:
         render_anim_sheet(args.anim_preview, rig, objs, clips)
 
     if os.environ.get('MOSH_DEBUG'):
         debug_stats(body, pants, shirt)
+    if os.environ.get('MOSH_POSE'):
+        dump_poses(rig, clips)
 
     # ---- Preview
     if args.preview:
@@ -408,6 +437,19 @@ def main():
                               export_force_sampling=True, export_frame_step=1, export_yup=True,
                               use_selection=True, export_image_format='JPEG', export_jpeg_quality=88)
     print('exported', args.out)
+
+
+def dump_poses(rig, clips):
+    """Print world positions of key joints at the first key of each clip (retarget debugging)."""
+    for track in rig.animation_data.nla_tracks:
+        track.mute = True
+    for act, n in clips:
+        rig.animation_data.action = act
+        bpy.context.scene.frame_set(1)
+        pos = {b: tuple(round(c, 2) for c in rig.matrix_world @ rig.pose.bones[b].head)
+               for b in ('root', 'spine05', 'spine01', 'neck01', 'head', 'foot.L', 'foot.R', 'wrist.L')}
+        print('POSE', act.name, pos)
+    rig.animation_data.action = None
 
 
 def landmarks(mesh, sk, P, jp):
@@ -448,25 +490,149 @@ def smart_unwrap(ob):
     bpy.ops.object.mode_set(mode='OBJECT')
 
 
-LOOK = {'skin': (0.78, 0.56, 0.44), 'hair': (0.09, 0.06, 0.045), 'beard': 'full', 'buzz': True}
-
-
-def texture_all(size, lm, body, eyes, shirt, pants, shoes, cap):
+def texture_all(size, lm, spec, body, eyes, shirt, pants, shoes, cap):
     for ob in (eyes, shirt, pants, shoes) + ((cap,) if cap else ()):
         smart_unwrap(ob)
+    look = {'skin': spec['skin'], 'hair': spec['hair_color'], 'beard': spec['beard'], 'buzz': spec['hair'] == 'buzz'}
     pos, nrm, ao, valid = tx.bake_maps(body, size)
-    tx.final_material(body, tx.paint_body(pos, nrm, ao, valid, lm, LOOK), 0.55)
+    tx.final_material(body, tx.paint_body(pos, nrm, ao, valid, lm, look), 0.55)
     pos, nrm, ao, valid = tx.bake_maps(eyes, 128, 8)
     tx.final_material(eyes, tx.paint_eyes(pos, valid, lm), 0.15)
+    sh = spec['shirt']
     pos, nrm, ao, valid = tx.bake_maps(shirt, size)
-    tx.final_material(shirt, tx.paint_shirt(pos, nrm, ao, valid, lm, (0.035, 0.035, 0.04), 'HATEBREED'), 0.9)
-    pos, nrm, ao, valid = tx.bake_maps(pants, size // 2)
-    tx.final_material(pants, tx.paint_denim(pos, nrm, ao, valid, lm), 0.85)
-    pos, nrm, ao, valid = tx.bake_maps(shoes, size // 4)
-    tx.final_material(shoes, tx.paint_shoes(pos, nrm, ao, valid), 0.6)
+    tx.final_material(shirt, tx.paint_shirt(pos, nrm, ao, valid, lm, sh['color'], sh['text'], sh['ink'], sh['pattern']), 0.9)
+    pa = spec['pants']
+    pos, nrm, ao, valid = tx.bake_maps(pants, max(256, size // 2))
+    tx.final_material(pants, tx.paint_pants(pos, nrm, ao, valid, lm, pa['fabric'], pa['color']), 0.85)
+    pos, nrm, ao, valid = tx.bake_maps(shoes, 256)
+    tx.final_material(shoes, tx.paint_shoes(pos, nrm, ao, valid, spec['shoes']), 0.6)
     if cap:
-        pos, nrm, ao, valid = tx.bake_maps(cap, size // 4)
-        tx.final_material(cap, tx.paint_cap(pos, nrm, ao, valid, (0.05, 0.05, 0.06), 'NY'), 0.7)
+        pos, nrm, ao, valid = tx.bake_maps(cap, 256)
+        knit = spec['head'] == 'beanie'
+        tx.final_material(cap, tx.paint_cap(pos, nrm, ao, valid, spec['head_color'], spec['head_logo'], knit), 0.85 if knit else 0.7)
+
+
+def sleeve_planes(sleeves, jp):
+    planes = []
+    for side, sign in (('L', 1), ('R', -1)):
+        sh, el, wr = jp(f'upperarm01.{side}____head'), jp(f'lowerarm01.{side}____head'), jp(f'wrist.{side}____head')
+        region = (lambda co, s=sh, g=sign: co.x * g > s.x * g - 0.02)
+        if sleeves == 'long':
+            planes.append((el + (wr - el) * 0.92, (wr - el).normalized(), region))
+        else:
+            planes.append((sh + (el - sh) * 0.5, (el - sh).normalized(), region))
+    return planes
+
+
+def build_headwear(kind, mesh, P, dom, jp, rig):
+    """Cap (brim front/back) or beanie made from the scalp; None for bare heads."""
+    if kind == 'none':
+        return None
+    brow_z = jp('head____head').z + 0.1
+    head_c = jp('head____head') + Vector((0, 0, 0.1))
+    low = brow_z - (0.012 if kind == 'beanie' else 0)
+    cap, _ = subset_mesh('Cap', mesh, 'body', P, lambda i: to_blender(P[i])[2] > low and dom(i) in ('head', 'neck03'))
+    bm = bmesh.new()
+    bm.from_mesh(cap.data)
+    if kind == 'beanie':
+        radial_push(bm, lambda co: head_c, lambda co: 1.09)
+        for vtx in bm.verts:  # slouchy top
+            vtx.co.z += max(0.0, vtx.co.z - (brow_z + 0.05)) * 0.6
+    else:
+        radial_push(bm, lambda co: head_c, lambda co: 1.07)
+    bm.to_mesh(cap.data)
+    bm.free()
+    if kind in ('cap', 'cap_back'):
+        front_y = min(vv.co.y for vv in cap.data.vertices)
+        bpy.ops.mesh.primitive_cube_add(size=1)
+        brim = bpy.context.active_object
+        brim.name = 'Brim'
+        brim.scale = (0.17, 0.1, 0.01)
+        brim.location = (head_c.x, front_y - 0.04, brow_z + 0.008)
+        bpy.ops.object.transform_apply(location=True, scale=True)
+        bpy.ops.object.select_all(action='DESELECT')
+        brim.select_set(True)
+        cap.select_set(True)
+        bpy.context.view_layer.objects.active = cap
+        bpy.ops.object.join()
+        if kind == 'cap_back':
+            for vv in cap.data.vertices:  # rotate 180° about the head's vertical axis
+                d = vv.co - head_c
+                vv.co = Vector((head_c.x - d.x, head_c.y - d.y, vv.co.z))
+    skin(cap, rig, [], {}, override='head')
+    return cap
+
+
+def hide_covered(body, clothes, reach=0.12, hem=0.04):
+    """Delete body faces fully hidden under clothing (never visible, ~40 % of the triangles).
+    A vertex counts as covered when a ray along its normal hits a garment within `reach` and it lies
+    more than `hem` away from any garment edge, so skin never shows through at hems while animating."""
+    from mathutils.bvhtree import BVHTree
+    from mathutils.kdtree import KDTree
+    trees, edge_pts = [], []
+    for c in clothes:
+        bm = bmesh.new()
+        bm.from_mesh(c.data)
+        bm.transform(c.matrix_world)
+        trees.append(BVHTree.FromBMesh(bm))
+        edge_pts += [v.co.copy() for v in bm.verts if v.is_boundary]
+        bm.free()
+    kd = KDTree(len(edge_pts))
+    for i, co in enumerate(edge_pts):
+        kd.insert(co, i)
+    kd.balance()
+    bm = bmesh.new()
+    bm.from_mesh(body.data)
+    mw = body.matrix_world
+    covered = set()
+    for v in bm.verts:
+        co = mw @ v.co
+        no = (mw.to_3x3() @ v.normal).normalized()
+        if kd.find(co)[2] < hem:
+            continue
+        if any(t.ray_cast(co + no * 0.001, no, reach)[0] is not None for t in trees):
+            covered.add(v.index)
+    kill = [f for f in bm.faces if all(v.index in covered for v in f.verts)]
+    before = len(bm.faces)
+    bmesh.ops.delete(bm, geom=kill, context='FACES_ONLY')
+    bmesh.ops.delete(bm, geom=[v for v in bm.verts if not v.link_faces], context='VERTS')
+    bm.to_mesh(body.data)
+    bm.free()
+    print(f'hide_covered: {len(kill)}/{before} body faces removed')
+
+
+def decimate(ob, ratio):
+    """Crowd LOD: collapse-decimate in rest pose (keeps UVs and vertex groups)."""
+    for o in bpy.context.view_layer.objects:
+        o.select_set(False)
+    ob.select_set(True)
+    bpy.context.view_layer.objects.active = ob
+    mod = ob.modifiers.new('Decimate', 'DECIMATE')
+    mod.ratio = ratio
+    bpy.ops.object.modifier_move_to_index(modifier='Decimate', index=0)
+    bpy.ops.object.modifier_apply(modifier='Decimate')
+
+
+def export_anims(args, rig):
+    """Skeleton + every clip, no meshes – shared by all character variants."""
+    import json
+    if args.cmu:
+        for name, file, start, end, mirrored, *opt in CLIPS:
+            for m in ([False, True] if mirrored else [False]):
+                retarget(rig, os.path.join(args.cmu, file), start, end, name + ('_m' if m else ''), mirror=m, **(opt[0] if opt else {}))
+    if args.keyclips:
+        with open(args.keyclips) as f:
+            data = json.load(f)
+        for cid, mirrored in KEY_CLIPS:
+            for m in ([False, True] if mirrored else [False]):
+                retarget_keyframes(rig, data, cid, cid + ('_m' if m else ''), mirror=m)
+    for o in bpy.context.view_layer.objects:
+        o.select_set(False)
+    rig.select_set(True)
+    bpy.ops.export_scene.gltf(filepath=args.out, export_format='GLB', export_skins=True, export_animations=True,
+                              export_animation_mode='ACTIONS', export_force_sampling=True, export_yup=True,
+                              use_selection=True)
+    print('exported', args.out, len(bpy.data.actions), 'clips')
 
 
 def debug_stats(body, pants, shirt):

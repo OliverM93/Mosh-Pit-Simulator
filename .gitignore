@@ -31,3 +31,6 @@ public/user-content/
 
 # External source data for the asset build (MakeHuman, CMU mocap) and Blender venv
 .cache/
+
+# Python (Blender tools)
+__pycache__/
