@@ -6,9 +6,11 @@ Zahlen und Formeln des Combo-Systems stehen in [COMBO_SYSTEM.md](COMBO_SYSTEM.md
 ## 1. Core Loop
 
 1. Song startet, die Band spielt, der Pit wartet.
-2. Spieler bewegt sich frei durch den Pit und drückt Moves **auf den Puls** der Musik.
+2. Spieler bewegt sich frei durch den Pit und verkettet Moves in natürlichem Tempo (Groove-Modell, D-026).
+   Moves **auf dem Beat** geben Bonus-Punkte und mehr Multiplikator.
 3. Moves hintereinander bilden eine **Combo** (Pool × Multiplikator). Eine kurze Pause **kassiert** sie.
-4. Ein Druck gegen den Beat ist ein **Bail**: die Combo ist verloren, der Spieler fällt hin.
+4. Ein großer Move ins Gedränge ist ein **Crash** (Bail): die Combo ist verloren, der Spieler fällt hin. Daneben
+   drücken kostet nichts außer dem Bonus.
 5. Breakdowns/Heavy Parts: Half-Time-Puls, große Moves zählen mehr, der Pit öffnet sich.
 6. Song-Ende: Ergebnis mit Note, Highscore wird gespeichert.
 
@@ -42,15 +44,15 @@ Eingabe-Prinzip: **Knopf = Kategorie, Richtung = Variante** (wie THPS). Richtung
   Platzbedarf und Schwierigkeit – alles Daten in `src/data/moves.ts`.
 
 ### Übergänge ✅
-- Moves dauern immer ganze Pulse und **enden auf dem Raster**; der nächste Move beginnt dadurch wieder im Takt.
-- **Input-Puffer:** Ein Druck bis 1 Puls vor Ende wird vorgemerkt und startet exakt am Move-Ende.
+- Moves dauern ihre natürliche Länge (0,5–1,25 s, passend zu den Animationen) – kein Stauchen auf Taktschläge.
+- **Input-Puffer:** Ein Druck bis 0,35 s vor Ende wird vorgemerkt und startet exakt am Move-Ende.
 - **Cancel-Fenster:** Ab `cancelAt` (z. B. 65 % bei Arms) darf der nächste Move sofort starten.
 - Animationen werden 50–180 ms überblendet; alternierende Moves (2-Step, Kicks) werden bei Wiederholung gespiegelt.
 - Ein Druck lange vor Ende eines Moves wird ignoriert (keine Strafe).
 
 ### Luft und Landung ✅
 - Hop (Space) → innerhalb der ersten 80 % des Sprungs R oder F drücken: wird zu Tornado/Butterfly Kick, die
-  Flugzeit verlängert sich bis zum nächsten passenden Puls.
+  Flugzeit verlängert sich auf mindestens 80 % der natürlichen Länge des Air-Moves.
 - Bewertet wird der **Absprung**. Später Umstieg (> 55 % des Hops) oder Landung im Gedränge → **Sketchy** (×0,5),
   sonst **Clean Landing** (×1,2). Air-Moves werden erst bei der Landung gewertet.
 
@@ -64,8 +66,8 @@ Eingabe-Prinzip: **Knopf = Kategorie, Richtung = Variante** (wie THPS). Richtung
 Kurzfassung (Details: [COMBO_SYSTEM.md](COMBO_SYSTEM.md)):
 - Move-Punkte = Basis × Timing × Wiederholung × Sektion × Situations-Boni → in den **Pool**.
 - **Multiplikator** wächst pro frischem Move (+1, Link +0,5, Perfect +0,5, Good +0,25).
-- **Kassieren** nach 1,5 Pulsen Pause: Pool × Multiplikator × Stil-Mix × Variety.
-- **Bail** bei Miss: alles weg.
+- **Kassieren** nach 0,8 s Pause: Pool × Multiplikator × Stil-Mix × Variety.
+- **Crash/Bail** bei großem Move ohne Platz: alles weg.
 - Boni: Signature-Combos, Perfect-Streaks, Beatdrop-Hit, Breakdown-Bonus, Pit Frenzy (×2).
 - HUD: Score, Highscore, aktuelle Combo (Move-Namen), Pool × Multiplikator, Chain-Timer, letzte Bewertung.
 - Highscore und beste Combo werden pro Song+Venue gespeichert.
@@ -76,7 +78,8 @@ Kurzfassung (Details: [COMBO_SYSTEM.md](COMBO_SYSTEM.md)):
 - **Puls** = Bewertungsraster. Standard 1 Beat; Breakdown/Heavy Half-Time (2 Beats). Pro Sektion überschreibbar.
 - Sektionswechsel in Breakdown/Heavy: +500 in den laufenden Pool, Hype +12 %, Banner, Jubel, rotes Licht.
 - Beatdrop: Perfect-Move innerhalb ±½ Puls → DROP HIT (+1000).
-- Timing: Perfect / Good / Okay / Miss (Fenster skalieren mit dem Puls). Details: [AUDIO_AND_MUSIC.md](AUDIO_AND_MUSIC.md).
+- Timing: On Beat / Good / Okay als Bonus, Off-Beat ohne Strafe (Fenster skalieren mit dem Puls). Details:
+  [COMBO_SYSTEM.md](COMBO_SYSTEM.md).
 
 ## 6. Hype und Pit Frenzy ✅
 

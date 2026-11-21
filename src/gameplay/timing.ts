@@ -32,12 +32,15 @@ export function judgeTiming(offsetSec: number, pulseInterval: number): Rating {
   return 'miss';
 }
 
-/** Score multiplier per rating. Miss never scores: it causes a bail. */
+/**
+ * Score multiplier per rating. Groove model (D-026): timing is a bonus only –
+ * an off-beat move ('miss') still scores its base value.
+ */
 export const RATING_SCORE: Record<Rating, number> = {
   perfect: 1.5,
-  good: 1.2,
-  okay: 1,
-  miss: 0,
+  good: 1.25,
+  okay: 1.1,
+  miss: 1,
 };
 
 /** Extra combo multiplier gain per rating ("Perfect strengthens the combo"). */
@@ -52,6 +55,6 @@ export const RATING_MULTIPLIER_BONUS: Record<Rating, number> = {
 export const RATING_HYPE: Record<Rating, number> = {
   perfect: 0.06,
   good: 0.04,
-  okay: 0.015,
-  miss: 0,
+  okay: 0.02,
+  miss: 0.012,
 };

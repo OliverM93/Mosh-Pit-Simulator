@@ -50,17 +50,17 @@ Ins Bild klicken, um die Maus für die Kamera zu fangen.
 | Move-Liste ein/aus             | H                        | Back                 |
 | Pause                          | Esc / P                  | Start                |
 
-**Grundregeln:** Drücke auf den Puls (die Striche treffen sich in der Raute). Moves hintereinander erhöhen den
-Multiplikator, eine kurze Pause kassiert die Combo. Wiederholungen bringen immer weniger, verschiedene
-Move-Stile geben Bonus. Breakdowns und Heavy Parts verdoppeln Kicks und Air-Moves. Ein Druck gegen den Beat ist
-ein **Bail** – die ganze Combo ist weg.
+**Grundregeln:** Verkette Moves ohne Pause – jeder Move erhöht den Multiplikator, eine kurze Pause kassiert die
+Combo. Moves auf dem Beat (die Striche treffen sich in der Raute) geben Bonus, daneben kostet nichts. Wiederholungen
+bringen immer weniger, verschiedene Move-Stile geben Bonus. Breakdowns und Heavy Parts verdoppeln Kicks und Air-Moves.
+Wer einen großen Move ins Gedränge setzt, **crasht** – die ganze Combo ist weg.
 
 ## Was ist drin (Phase 1)
 
 - 3 selbst synthetisierte Platzhalter-Songs (Hardcore, Beatdown, Hardcore-Punk) mit Intro/Verse/Chorus/Breakdown/Heavy/Outro
-- 11 Moves inkl. Air-Moves, beat-quantisierte Animationen mit Überblendung
+- 11 Moves inkl. Air-Moves, Animationen mit Überblendung
 - Combo-System nach THPS-Vorbild: Pool × Multiplikator, Wiederholungs-Abzug, Signature-Combos, Hype-Meter mit Frenzy
-- Timing-Bewertung Perfect / Good / Okay / Miss, Beatdrop-Bonus
+- Groove-Modell: Timing als Bonus (On Beat / Good / Okay), Beatdrop-Bonus, Crash bei großen Moves ohne Platz
 - Lebendige Crowd: Pit-Wand, die sich im Breakdown öffnet, 2-Stepper, Pit-Ninjas, Crowd-Surfer, Band auf der Bühne
 - Venue „The Basement“ (Kellerclub), PS1-Look mit Vertex-Jitter, Dithering, Nebel, Strobo
 - Modi: **Arcade** und **Free Pit**; Highscores und Einstellungen werden lokal gespeichert

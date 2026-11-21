@@ -1,7 +1,8 @@
 import type { MoveDefinition } from '../gameplay/moveTypes';
 
 /**
- * Phase 1 move list. Add new moves here – input resolution, scoring and
+ * Move list. `durationSec` is the real play length (groove model, D-026) and
+ * matches the motion-capture/keyframe clips. Add new moves here – input resolution, scoring and
  * animation lookup are all data driven.
  */
 export const MOVES: MoveDefinition[] = [
@@ -10,7 +11,7 @@ export const MOVES: MoveDefinition[] = [
     name: '2-Step',
     category: 'step',
     input: { button: 'step', directions: ['neutral', 'back', 'side'] },
-    durationSec: 0.36,
+    durationSec: 0.48,
     score: 40,
     multiplierGain: 0.5,
     repetition: [1, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3],
@@ -29,7 +30,7 @@ export const MOVES: MoveDefinition[] = [
     name: 'Crowd Push',
     category: 'step',
     input: { button: 'step', directions: ['forward'] },
-    durationSec: 0.5,
+    durationSec: 0.6,
     score: 70,
     multiplierGain: 0.5,
     repetition: [1, 0.75, 0.5, 0.3, 0.15],
@@ -48,7 +49,7 @@ export const MOVES: MoveDefinition[] = [
     name: 'Forward Arms',
     category: 'arms',
     input: { button: 'arms', directions: ['neutral', 'forward'] },
-    durationSec: 0.7,
+    durationSec: 0.95,
     score: 120,
     multiplierGain: 1,
     repetition: [1, 0.75, 0.5, 0.3, 0.15, 0.1],
@@ -65,7 +66,7 @@ export const MOVES: MoveDefinition[] = [
     name: 'Side Arms',
     category: 'arms',
     input: { button: 'arms', directions: ['side'] },
-    durationSec: 0.7,
+    durationSec: 0.95,
     score: 140,
     multiplierGain: 1,
     repetition: [1, 0.75, 0.5, 0.3, 0.15, 0.1],
@@ -82,7 +83,7 @@ export const MOVES: MoveDefinition[] = [
     name: 'Picking Up Change',
     category: 'arms',
     input: { button: 'arms', directions: ['back'] },
-    durationSec: 0.75,
+    durationSec: 1.0,
     score: 170,
     multiplierGain: 1,
     repetition: [1, 0.75, 0.5, 0.3, 0.15, 0.1],
@@ -99,7 +100,7 @@ export const MOVES: MoveDefinition[] = [
     name: 'Spinkick',
     category: 'kick',
     input: { button: 'kick' },
-    durationSec: 0.7,
+    durationSec: 0.95,
     score: 260,
     multiplierGain: 1,
     repetition: [1, 0.7, 0.45, 0.25, 0.1],
@@ -117,7 +118,7 @@ export const MOVES: MoveDefinition[] = [
     name: 'Floorwork',
     category: 'floor',
     input: { button: 'floor', directions: ['neutral', 'forward', 'back'] },
-    durationSec: 0.75,
+    durationSec: 1.15,
     score: 220,
     multiplierGain: 1,
     repetition: [1, 0.7, 0.45, 0.25, 0.1],
@@ -135,7 +136,7 @@ export const MOVES: MoveDefinition[] = [
     name: 'Cartwheel',
     category: 'floor',
     input: { button: 'floor', directions: ['side'] },
-    durationSec: 0.75,
+    durationSec: 1.25,
     score: 320,
     multiplierGain: 1,
     repetition: [1, 0.7, 0.45, 0.25, 0.1],
@@ -154,7 +155,7 @@ export const MOVES: MoveDefinition[] = [
     name: 'Hop',
     category: 'air',
     input: { button: 'jump' },
-    durationSec: 0.45,
+    durationSec: 0.5,
     score: 20,
     multiplierGain: 0.5,
     repetition: [1, 0.8, 0.6, 0.4, 0.2],
@@ -173,7 +174,7 @@ export const MOVES: MoveDefinition[] = [
     name: 'Tornado Kick',
     category: 'air',
     input: { button: 'kick', air: true },
-    durationSec: 0.8,
+    durationSec: 1.0,
     score: 450,
     multiplierGain: 1,
     repetition: [1, 0.65, 0.4, 0.2, 0.1],
@@ -192,7 +193,7 @@ export const MOVES: MoveDefinition[] = [
     name: 'Butterfly Kick',
     category: 'air',
     input: { button: 'floor', air: true },
-    durationSec: 0.85,
+    durationSec: 1.05,
     score: 520,
     multiplierGain: 1,
     repetition: [1, 0.65, 0.4, 0.2, 0.1],

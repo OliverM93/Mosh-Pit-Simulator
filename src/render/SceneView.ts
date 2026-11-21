@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { GRAPHICS_PRESETS, type GraphicsPreset } from '../data/graphics';
+import { MOVE_TUNING } from '../gameplay/MoveSystem';
 import type { PitSession } from '../gameplay/PitSession';
 import { CameraController } from './CameraController';
 import { CrowdRenderer } from './CrowdRenderer';
@@ -75,7 +76,7 @@ export class SceneView {
         this.cameraCtl.addShake(0.35);
         this.renderer.pulseFlash(0.25, 0xff2020);
         this.player.bailStart = session.songTime;
-        this.player.bailUntil = session.songTime + Math.max(0.7, 2 * session.timeline.pulseAt(session.songTime).interval);
+        this.player.bailUntil = session.songTime + MOVE_TUNING.bailSec;
       }),
       ev.on('bank', (e) => {
         if (e.result.total > 20000) this.renderer.pulseFlash(0.2, 0x40ff80);

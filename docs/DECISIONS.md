@@ -7,6 +7,17 @@ Format: **Datum · Entscheidung** – Begründung · Betroffene Systeme · Alter
 
 ---
 
+### D-026 · 2026-11-21 · Groove-Modell statt Taktdrücken (Variante A)
+- **Anlass:** Owner-Playtest: Taktdrücken viel zu schnell; echte Songs haben Tempowechsel.
+- **Entscheidung (Owner, Variante A):** Moves laufen in natürlicher Länge (passend zu Mocap-Animationen), Timing
+  zum Beat ist nur Bonus (×1,5 / 1,25 / 1,1, Multiplikator-Bonus, Drop-Hit). Daneben drücken kostet nichts. Risiko
+  ist räumlich: ein großer Move ins Gedränge (≥ 4 Personen im Platz) crasht und kostet die Combo. Combo wird nach
+  0,8 s Pause kassiert.
+- **Ersetzt:** D-008 (Quantisierung auf Pulse) und D-009 (Miss = Bail).
+- **Betroffen:** `MoveSystem`, `timing.ts`, `ComboSystem`, `PitSession`, HUD, Hilfe, Ergebnis-Note, Tests.
+- **Fallback:** Variante C (ganz ohne Rhythmus), falls A nicht trägt – Owner-Vorbehalt.
+- **Offen:** Tempowechsel in Songs (BPM pro Abschnitt) für die Bonus-Bewertung.
+
 ### D-025 · 2026-11-21 · Echte Figuren aus Blender (MakeHuman CC0) mit CMU-Motion-Capture
 - **Anlass:** Owner will mindestens PS2-Niveau (Referenz: Resident Evil 4, Tekken 4/5) mit echten Modellen und
   Animationen. Werkzeugwahl Claude überlassen.

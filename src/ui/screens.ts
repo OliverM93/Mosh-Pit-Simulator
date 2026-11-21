@@ -94,8 +94,9 @@ export function helpScreen(onBack: () => void): MenuScreen {
       'panel',
       `<h3>THE PIT</h3>WASD move · Mouse look (click to lock) · Shift sprint · Q/E/R/F + direction = moves · Space jump, then R/F in the air.<br>
        Gamepad: left stick move · right stick look · RT sprint · X / Y / B / RB moves · A jump.<br>
-       <h3>TIMING</h3>Press on the pulse (the ticks meet in the diamond). PERFECT / GOOD / OKAY score more – pressing against the beat is a MISS and you <b>bail</b>: the whole combo is gone.
-       Breakdowns and heavy parts switch to a half-time pulse and double the value of kicks, floorwork and air moves.
+       <h3>GROOVE</h3>Moves flow at their natural speed – mash, link and mix them. Landing a move ON THE BEAT (ticks meet in the diamond) is a bonus: more points and a bigger multiplier. Being off the beat costs nothing.
+       Breakdowns and heavy parts double kicks, floorwork and air moves. Hit a big move right on the DROP for a huge bonus.
+       <h3>RISK</h3>Big moves need room. Throw a kick into a packed crowd and you <b>crash</b>: the whole combo is gone.
        <h3>COMBOS</h3>Chain moves without pausing – each one grows the multiplier. A short pause banks the combo (pool × multiplier).
        Repeating the same move pays less and less, mixing move styles pays a bonus. Fill the HYPE meter for a PIT FRENZY (x2).
        Big moves need space: the ring under you turns red when the crowd is too close.`,
@@ -202,16 +203,14 @@ export interface ResultData {
   previousBest: number;
 }
 
-/** Letter grade from timing accuracy and bails. */
+/** Letter grade from on-beat share, combo length and crashes (groove model). */
 export function grade(stats: SessionStats): string {
-  const judged = stats.moves + stats.bails;
-  if (judged === 0) return 'D';
-  const perfectRate = stats.ratings.perfect / judged;
-  const bailRate = stats.bails / judged;
-  if (perfectRate >= 0.85 && stats.bails === 0) return 'S';
-  if (perfectRate >= 0.65 && bailRate < 0.03) return 'A';
-  if (perfectRate >= 0.45 && bailRate < 0.08) return 'B';
-  if (perfectRate >= 0.25) return 'C';
+  if (stats.moves === 0) return 'D';
+  const onBeat = (stats.ratings.perfect + stats.ratings.good) / stats.moves;
+  if (onBeat >= 0.55 && stats.bails === 0 && stats.longestCombo >= 15) return 'S';
+  if (onBeat >= 0.4 && stats.bails <= 1) return 'A';
+  if (onBeat >= 0.25 && stats.bails <= 3) return 'B';
+  if (onBeat >= 0.12) return 'C';
   return 'D';
 }
 
@@ -221,18 +220,17 @@ export function resultsScreen(r: ResultData, onRetry: () => void, onSongs: () =>
   s.el.appendChild(el('h1', 'screen-title', `${r.song.title.toUpperCase()} — SET OVER`));
   s.el.appendChild(el('div', 'grade', grade(st)));
   if (r.newHighscore) s.el.appendChild(el('div', 'new-hi', 'NEW HIGHSCORE!'));
-  const judged = st.moves + st.bails;
-  const acc = judged ? Math.round(((st.ratings.perfect + st.ratings.good * 0.7 + st.ratings.okay * 0.4) / judged) * 100) : 0;
+  const acc = st.moves ? Math.round(((st.ratings.perfect + st.ratings.good) / st.moves) * 100) : 0;
   const rows: [string, string][] = [
     ['FINAL SCORE', formatScore(r.score)],
     ['PREVIOUS BEST', formatScore(r.previousBest)],
     ['BEST COMBO', formatScore(st.bestCombo)],
     ['LONGEST COMBO', `${st.longestCombo} MOVES`],
     ['MOVES', `${st.moves}`],
-    ['PERFECT / GOOD / OKAY', `${st.ratings.perfect} / ${st.ratings.good} / ${st.ratings.okay}`],
-    ['BAILS', `${st.bails}`],
+    ['ON BEAT / GOOD / OKAY', `${st.ratings.perfect} / ${st.ratings.good} / ${st.ratings.okay}`],
+    ['CRASHES', `${st.bails}`],
     ['DROP HITS', `${st.dropHits}`],
-    ['ACCURACY', `${acc}%`],
+    ['ON-BEAT SHARE', `${acc}%`],
   ];
   const grid = el('div', 'results');
   for (const [k, v] of rows) grid.append(el('div', '', k), el('div', 'v', v));

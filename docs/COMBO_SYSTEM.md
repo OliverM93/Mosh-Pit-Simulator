@@ -1,6 +1,6 @@
 # Combo-System
 
-Quellcode: `src/gameplay/ComboSystem.ts` (Scoring), `src/gameplay/MoveSystem.ts` (Ablauf, Puffer, Bails),
+Quellcode: `src/gameplay/ComboSystem.ts` (Scoring), `src/gameplay/MoveSystem.ts` (Ablauf, Puffer, Crash-Bails),
 `src/gameplay/timing.ts` (Bewertung), `src/data/moves.ts`, `src/data/comboBonuses.ts`,
 `src/gameplay/PitSession.ts` (Kontext: Sektion, Platz, Anlauf, Beatdrop). Alle Zahlen stehen in Tuning-Objekten
 (`SCORING`, `MOVE_TUNING`, `SESSION_TUNING`, `TIMING_WINDOWS`, `HYPE_TUNING`) – bei Änderungen hier nachziehen.
@@ -21,8 +21,9 @@ Quellcode: `src/gameplay/ComboSystem.ts` (Scoring), `src/gameplay/MoveSystem.ts`
 | `tornado_kick` | Tornado Kick | Space → R | air | 0,8 s | 450 | +1 | 1,3 m | ✔ | Nur in der Luft |
 | `butterfly_kick` | Butterfly Kick | Space → F | air | 0,85 s | 520 | +1 | 1,4 m | ✔ | Nur in der Luft |
 
-\* *Natürliche* Dauer. Die echte Dauer ist `max(1, round(dauer / puls))` ganze Pulse und endet auf dem Raster.
-Bei 165 BPM (Puls 0,364 s) dauert ein Spinkick 2 Pulse, im Breakdown (Puls 0,727 s) 1 Puls.
+\* Echte Spieldauer (Groove-Modell, D-026): Moves laufen in natürlicher Länge, passend zu den Animationen; sie
+werden nicht mehr auf Taktschläge gestaucht. (Die Dauer-Spalte oben ist veraltet; maßgeblich ist `durationSec` in
+`src/data/moves.ts`: 2-Step 0,48 s … Cartwheel 1,25 s.)
 
 Felder pro Move (`MoveDefinition`): `input` (Knopf, Richtungen, Luft), `durationSec`, `score`, `multiplierGain`,
 `repetition` (Faktoren für 1., 2., 3. … Nutzung in derselben Combo), `cancelAt`, `moveControl`, `rootMotion`,
@@ -31,39 +32,39 @@ Felder pro Move (`MoveDefinition`): `input` (Knopf, Richtungen, Luft), `duration
 ## Ablauf einer Combo
 
 ```
-Druck ──► Timing-Bewertung ──► Miss? ──ja──► BAIL (Combo weg, Sturz 2 Pulse / min. 0,7 s)
-                                  │nein
-                                  ▼
-            läuft ein Move?  ── nein ──► sofort starten
+Druck ──► Timing-Bewertung (nur Bonus) ──► läuft ein Move?
+                │ nein ──► sofort starten (Clean Link, wenn ≤ 0,25 s nach dem letzten Move)
                 │ ja
                 ├─ Fortschritt ≥ cancelAt ──► abbrechen, sofort starten (Clean Link)
-                ├─ Ende ≤ 1,05 Pulse entfernt ──► puffern, startet exakt am Ende (Clean Link)
+                ├─ Ende ≤ 0,35 s entfernt ──► puffern, startet exakt am Ende (Clean Link)
                 └─ sonst ──► ignorieren (keine Strafe)
 
-Kein Move aktiv länger als max(0,55 s; 1,5 Pulse) ──► Combo wird kassiert
+Großer Move (advanced) mit ≥ 4 Personen im Platzradius × 0,7 ──► CRASH = Bail (Combo weg, 1,1 s Sturz)
+Kein Move aktiv länger als 0,8 s ──► Combo wird kassiert
 ```
 
 Bodenmoves werden beim Start gewertet, Hop und Air-Moves bei der Landung.
 
 ## Timing-Bewertung
 
-Abstand des Tastendrucks (Event-Zeitstempel, latenzkorrigiert) zum nächsten Puls.
+Groove-Modell (D-026): Timing ist **nur Bonus**. Bewertet wird der Abstand des Tastendrucks (Event-Zeitstempel,
+latenzkorrigiert) zum nächsten Puls; daneben (`miss`) heißt einfach Basispunkte, kein Sturz.
 Fenster = `min(Anteil × Pulsintervall, Obergrenze)`:
 
 | Bewertung | Anteil | Obergrenze | Punkte-Faktor | Multiplikator-Bonus | Hype |
 | --- | --- | --- | --- | --- | --- |
-| Perfect | 14 % | 65 ms | ×1,5 | +0,5 | 6 % × Schwierigkeit |
-| Good | 27 % | 120 ms | ×1,2 | +0,25 | 4 % × Schw. |
-| Okay | 40 % | 180 ms | ×1,0 | – | 1,5 % × Schw. |
-| Miss | darüber | – | Bail | – | −30 % (Bail) |
+| Perfect („ON BEAT!“) | 14 % | 65 ms | ×1,5 | +0,5 | 6 % × Schwierigkeit |
+| Good | 27 % | 120 ms | ×1,25 | +0,25 | 4 % × Schw. |
+| Okay | 40 % | 180 ms | ×1,1 | – | 2 % × Schw. |
+| Off-Beat (`miss`) | darüber | – | ×1,0 | – | 1,2 % × Schw. |
 
-Beispiel 165 BPM (Puls 364 ms): Perfect ±51 ms, Good ±98 ms, Okay ±146 ms, Miss = „auf dem Offbeat“.
+Beispiel 165 BPM (Puls 364 ms): Perfect ±51 ms, Good ±98 ms, Okay ±146 ms.
 
 ## Punkte-Formel
 
 ```
 movePunkte = rund5( basis
-              × timing            (1,5 / 1,2 / 1,0)
+              × timing            (1,5 / 1,25 / 1,1 / 1,0)
               × wiederholung      (move.repetition[n-te Nutzung])
               × sektion           (advanced: Chorus 1,1 · Breakdown 1,5 · Heavy 2,0 | basic: Chorus 1,1)
               × cleanLink 1,1     (verkettet ohne Lücke, nicht beim 1. Move)
@@ -107,11 +108,12 @@ kassiert = rund( pool × max(1, multiplikator) × stilMix × variety )
 | PIT NINJA | Spinkick → Tornado Kick → Butterfly Kick | 1500 |
 | HARDCORE HISTORY | 2-Step → Forward Arms → Spinkick → Butterfly Kick → Cartwheel → 2-Step | 3000 |
 
-## Bail
+## Bail (Crash)
 
-Auslöser: Miss-Bewertung bei einem Druck (auch gepuffert). Folgen: Combo-Pool verloren (wird als „BAILED! −X“
-angezeigt), Hype −30 % bzw. Frenzy-Ende, Perfect-Serie zurückgesetzt, Sturz-Animation, Eingaben gesperrt für
-max(0,7 s; 2 Pulse), Crowd reagiert mit „Ohh“.
+Auslöser (Groove-Modell, D-026): Ein fortgeschrittener Move (Kick, Floor, Air) wird gestartet, während ≥ 4 Personen
+im Platzradius × 0,7 stehen – der Spieler kracht ins Publikum. Folgen: Combo-Pool verloren („CRASHED INTO THE CROWD!
+−X“), Hype −30 % bzw. Frenzy-Ende, Perfect-Serie zurückgesetzt, Sturz-Animation, Eingaben 1,1 s gesperrt, Crowd
+reagiert mit „Ohh“. Daneben drücken führt **nie** zu einem Bail.
 
 ## Erweiterbarkeit
 

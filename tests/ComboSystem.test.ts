@@ -66,11 +66,16 @@ describe('ComboSystem', () => {
   it('banks after the chain window expires', () => {
     const c = new ComboSystem();
     c.addMove(getMove('two_step'), ctx(), 0);
-    expect(c.tick(0.5, false, 0.5)).toBeNull(); // window = 0.75 s
-    expect(c.tick(0.7, false, 0.5)).toBeNull();
-    const r = c.tick(0.8, false, 0.5);
+    expect(c.tick(0.5, false)).toBeNull(); // window = 0.8 s
+    expect(c.tick(0.75, false)).toBeNull();
+    const r = c.tick(0.85, false);
     expect(r).not.toBeNull();
     expect(c.score).toBe(r!.total);
+  });
+
+  it('still scores off-beat moves (timing is a bonus)', () => {
+    const c = new ComboSystem();
+    expect(c.addMove(getMove('spinkick'), ctx('miss'), 0).points).toBeGreaterThan(0);
   });
 
   it('awards named combos', () => {

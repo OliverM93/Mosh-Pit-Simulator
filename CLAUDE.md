@@ -52,7 +52,8 @@ docs/           Dokumentation (deutsch)
    `src/input/bindings.ts`. Logik nur ändern, wenn ein neues *Konzept* dazukommt.
 3. **Song-Zeit ist die Wahrheit.** Timing kommt aus Song-Metadaten (`SongTimeline`), die Uhr aus dem AudioContext
    (`SongClock`). Keine Audioanalyse. Tastendrücke tragen Event-Zeitstempel, nicht Frame-Zeit.
-4. **Moves enden auf dem Raster.** Move-Längen werden auf ganze Pulse quantisiert (`MoveSystem.start`).
+4. **Groove-Modell (D-026).** Moves laufen in natürlicher Länge; Timing zum Beat ist nur Bonus. Risiko ist
+   räumlich (Crash bei großen Moves ins Gedränge), nicht rhythmisch.
 5. **Tuning-Werte gebündelt:** `SCORING` (ComboSystem), `MOVE_TUNING`, `SESSION_TUNING`, `PLAYER_TUNING`,
    `CROWD_TUNING`, `HYPE_TUNING`, `TIMING_WINDOWS`. Keine Magic Numbers verstreut einbauen.
 6. **Keine Fremd-Assets ohne geklärte Lizenz.** Texturen/Musik/SFX sind prozedural (siehe `docs/ASSET_PIPELINE.md`).
@@ -97,7 +98,7 @@ Crowd, PS1-Renderer, HUD/Menüs, Arcade + Free Pit, Save-System, 45 Tests. Näch
 ## Wichtige Entscheidungen (Kurzfassung, Details in `docs/DECISIONS.md`)
 
 - TS + Three.js + Vite; Gameplay headless und getestet.
-- Timing aus Song-Metadaten + AudioContext-Uhr; Miss = Bail.
+- Timing aus Song-Metadaten + AudioContext-Uhr; Timing nur als Bonus, Crash statt Miss-Bail (D-026).
 - Combo wird nach einer kurzen Pause (Chain Window) kassiert, nicht beim Landen.
 - Musik, SFX und Texturen prozedural – keine Lizenzrisiken.
 - Noch keine Lizenzdatei (Entscheidung des Owners steht aus).

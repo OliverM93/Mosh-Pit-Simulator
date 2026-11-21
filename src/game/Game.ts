@@ -225,7 +225,7 @@ export class Game {
     this.state = 'playing';
     this.input.requestPointerLock();
     if (detected) this.hud.showHint(detected, 5);
-    else this.hud.showHint(this.input.lastDevice === 'gamepad' ? 'X = 2-STEP ON THE BEAT · BACK = MOVE LIST' : 'Q = 2-STEP ON THE BEAT · CLICK TO LOOK AROUND · H = MOVE LIST', 6);
+    else this.hud.showHint(this.input.lastDevice === 'gamepad' ? 'CHAIN MOVES · LAND BIG ONES ON THE BEAT · BACK = MOVE LIST' : 'CHAIN MOVES · LAND BIG ONES ON THE BEAT · CLICK = LOOK · H = MOVE LIST', 6);
   }
 
   /** Recorded songs may have music before beat 0 (offsetSec): start early enough to play it. */

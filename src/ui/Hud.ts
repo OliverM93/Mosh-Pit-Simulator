@@ -6,7 +6,8 @@ import type { Rating } from '../gameplay/timing';
 
 const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T;
 
-const RATING_TEXT: Record<Rating, string> = { perfect: 'PERFECT!', good: 'GOOD', okay: 'OKAY', miss: 'MISS' };
+/** Timing is a bonus (D-026): off-beat moves show no rating at all. */
+const RATING_TEXT: Record<Rating, string> = { perfect: 'ON BEAT!', good: 'GOOD TIMING', okay: 'OKAY', miss: '' };
 const TICKS = 10;
 
 /** Gamepad labels for the move list (keyboard hints come from the move data). */
@@ -113,6 +114,7 @@ export class Hud {
     const ev = session.events;
     this.unsub.push(
       ev.on('rating', (e) => {
+        if (e.rating === 'miss') return;
         this.rating.className = e.rating;
         this.rating.textContent = RATING_TEXT[e.rating];
         void this.rating.offsetWidth;
@@ -125,7 +127,7 @@ export class Hud {
         this.popup(`+${formatScore(e.result.total)}`, 'bank');
         if (e.result.bonuses.length) this.popup(e.result.bonuses.join(' · '));
       }),
-      ev.on('bail', (e) => this.popup(e.lost > 0 ? `BAILED! -${formatScore(e.lost)}` : 'BAILED!', 'bail')),
+      ev.on('bail', (e) => this.popup(e.lost > 0 ? `CRASHED INTO THE CROWD! -${formatScore(e.lost)}` : 'CRASHED!', 'bail')),
       ev.on('section', (e) => {
         const t = e.section.type;
         if (t === 'breakdown' || t === 'heavy') this.showBanner(`${e.section.label}!`);
@@ -179,7 +181,7 @@ export class Hud {
       this.set(this.comboScore, '');
     }
     const pulse = s.timeline.pulseAt(t);
-    const chain = s.combo.chainRemaining(t, s.moves.busy, pulse.interval);
+    const chain = s.combo.chainRemaining(t, s.moves.busy);
     this.chain.style.width = `${Math.round(chain * 100)}%`;
 
     // Beat bar: ticks slide in from both sides and meet the target on each pulse.

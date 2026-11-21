@@ -69,11 +69,27 @@ describe('PitSession (headless full song)', () => {
     });
   }
 
-  it('off-beat mashing bails and scores less than on-beat play', () => {
+  it('off-beat play never bails but scores less than on-beat play', () => {
     const good = playThrough('basement_rules', 0.01).session.combo.score;
     const { session, counts } = playThrough('basement_rules', 0.16);
-    expect(counts.bail).toBeGreaterThan(0);
+    expect(counts.bail).toBe(0);
     expect(session.combo.score).toBeLessThan(good);
+    expect(session.combo.score).toBeGreaterThan(0);
+  });
+
+  it('crashes a big move thrown into the packed pit wall', () => {
+    const session = new PitSession(getSong('basement_rules'), getVenue('basement'));
+    let bails = 0;
+    session.events.on('bail', () => bails++);
+    const input = (presses: MoveRequest[]): FrameInput => ({ moveX: 0, moveZ: 0, sprint: false, cameraYaw: 0, presses });
+    for (let t = 0; t < 2; t += DT) session.update(DT, t, input([]));
+    // Teleport into the middle of the watchers and spinkick.
+    const w = session.crowd.agents.find((a) => a.role === 'watcher' && a.ringRow === 1)!;
+    session.player.x = w.x;
+    session.player.z = w.z;
+    session.update(DT, 2, input([{ button: 'kick', direction: 'neutral', side: 0, pressTime: 2 }]));
+    expect(bails).toBe(1);
+    expect(session.moves.isBailing).toBe(true);
   });
 
   it('keeps the player out of the stage and inside the room', () => {

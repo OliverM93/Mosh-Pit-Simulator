@@ -30,9 +30,8 @@ export const SCORING = {
   ],
   /** Below this repetition factor a move adds no multiplier. */
   repetitionGainThreshold: 0.5,
-  /** Chain window: idle pulses before a combo is banked. */
-  chainPulses: 1.5,
-  chainMinSec: 0.55,
+  /** Chain window: idle seconds before a combo is banked. */
+  chainSec: 0.8,
 };
 
 export interface MoveScoreContext {
@@ -234,25 +233,23 @@ export class ComboSystem {
   }
 
   /** Bank automatically once the player stayed idle longer than the chain window. */
-  tick(time: number, busy: boolean, pulseInterval: number): BankResult | null {
+  tick(time: number, busy: boolean): BankResult | null {
     const c = this.current;
     if (!c) return null;
     if (busy) {
       c.lastActiveTime = time;
       return null;
     }
-    const window = Math.max(SCORING.chainMinSec, SCORING.chainPulses * pulseInterval);
-    if (time - c.lastActiveTime > window) return this.bank();
+    if (time - c.lastActiveTime > SCORING.chainSec) return this.bank();
     return null;
   }
 
   /** Remaining chain window 0..1 (1 = just acted). */
-  chainRemaining(time: number, busy: boolean, pulseInterval: number): number {
+  chainRemaining(time: number, busy: boolean): number {
     const c = this.current;
     if (!c) return 0;
     if (busy) return 1;
-    const window = Math.max(SCORING.chainMinSec, SCORING.chainPulses * pulseInterval);
-    return Math.max(0, 1 - (time - c.lastActiveTime) / window);
+    return Math.max(0, 1 - (time - c.lastActiveTime) / SCORING.chainSec);
   }
 
   bank(): BankResult | null {
@@ -277,7 +274,6 @@ export class ComboSystem {
     this.current = null;
     this.perfectStreak = 0;
     this.stats.bails++;
-    this.stats.ratings.miss++;
     return lost;
   }
 

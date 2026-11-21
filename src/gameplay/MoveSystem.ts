@@ -31,11 +31,13 @@ export interface ActiveMove {
   conversionProgress?: number;
 }
 
+export type BailReason = 'crash';
+
 export type MoveEvent =
   | { type: 'start'; move: ActiveMove }
   | { type: 'convert'; move: ActiveMove; from: ActiveMove }
   | { type: 'end'; move: ActiveMove }
-  | { type: 'bail'; time: number; rating: Rating; offset: number; until: number }
+  | { type: 'bail'; time: number; until: number; reason: BailReason }
   | { type: 'recover'; time: number };
 
 export const MOVE_TUNING = {
@@ -43,18 +45,21 @@ export const MOVE_TUNING = {
   hopConvertUntil: 0.8,
   /** Conversions later than this give a sketchy landing. */
   sketchyAfter: 0.55,
-  /** Bail recovery in pulses (min seconds below). */
-  bailPulses: 2,
-  bailMinSec: 0.7,
-  /** A press this many pulses (or less) before the current move ends is buffered. */
-  bufferPulses: 1.05,
-  /** Idle gap (in pulses) that still counts as a clean link. */
-  cleanGapPulses: 0.5,
+  /** Air moves started from a hop last at least this share of their natural length. */
+  airMinShare: 0.8,
+  /** Bail (crash) recovery in seconds. */
+  bailSec: 1.1,
+  /** A press this close (seconds) before the current move ends is buffered. */
+  bufferSec: 0.35,
+  /** Idle gap (seconds) that still counts as a clean link. */
+  cleanGapSec: 0.25,
 };
 
 /**
- * The player's move state machine: input buffering, cancel windows,
- * beat-quantised move lengths, hop→air conversion and bails.
+ * The player's move state machine ("groove" model, D-026): moves play at
+ * their natural length, presses are buffered or cancel the end of a move,
+ * hops convert into air moves. Timing is only *judged* (bonus) – being off
+ * the beat never bails. Bails come from outside (crashing into the crowd).
  * Pure logic – no rendering, no audio. Driven by song time.
  */
 export class MoveSystem {
@@ -93,7 +98,7 @@ export class MoveSystem {
     if (this.isBailing) return;
     const cur = this.current;
 
-    // Hop → air move conversion (not timing judged: the take-off was).
+    // Hop → air move conversion (the take-off was already judged).
     if (cur && cur.def.id === 'hop' && req.button !== 'jump') {
       const p = this.progress(req.pressTime);
       const airDef = this.resolver.resolve(req.button, req.direction, true);
@@ -107,30 +112,18 @@ export class MoveSystem {
     if (!def) return;
 
     if (cur) {
-      const p = this.progress(req.pressTime);
-      const interval = this.timeline.pulseAt(cur.anchorTime).interval;
-      if (p >= cur.def.cancelAt && cur.def.cancelAt < 1) {
-        // Cancel window: judge now and start immediately.
-        const rating = this.judge(req.pressTime);
-        if (rating.rating === 'miss') return this.bail(req.pressTime, rating);
+      if (this.progress(req.pressTime) >= cur.def.cancelAt && cur.def.cancelAt < 1) {
+        // Cancel window: the next move starts right away.
         this.finish(req.pressTime);
-        this.start(def, req, req.pressTime, rating, true);
-        return;
-      }
-      if (cur.endTime - req.pressTime <= interval * MOVE_TUNING.bufferPulses) {
-        const rating = this.judge(req.pressTime);
-        if (rating.rating === 'miss') return this.bail(req.pressTime, rating);
+        this.start(def, req, req.pressTime, this.judge(req.pressTime), true);
+      } else if (cur.endTime - req.pressTime <= MOVE_TUNING.bufferSec) {
         this.buffered = req;
       }
-      // Too early: ignored (no penalty for pressing during a long move).
+      // Earlier presses during a long move are ignored (no penalty).
       return;
     }
-
-    const rating = this.judge(req.pressTime);
-    if (rating.rating === 'miss') return this.bail(req.pressTime, rating);
-    const interval = this.timeline.pulseAt(req.pressTime).interval;
-    const clean = req.pressTime - this.lastEndTime <= interval * MOVE_TUNING.cleanGapPulses;
-    this.start(def, req, req.pressTime, rating, clean);
+    const clean = req.pressTime - this.lastEndTime <= MOVE_TUNING.cleanGapSec;
+    this.start(def, req, req.pressTime, this.judge(req.pressTime), clean);
   }
 
   update(time: number): void {
@@ -151,9 +144,15 @@ export class MoveSystem {
     }
   }
 
-  /** Force a bail (e.g. crash). */
-  forceBail(time: number): void {
-    this.bail(time, { rating: 'miss', offset: 0 });
+  /** Bail from outside the move system (e.g. a big move into a packed crowd). */
+  forceBail(time: number, reason: BailReason = 'crash'): void {
+    const until = time + MOVE_TUNING.bailSec;
+    this.current = null;
+    this.buffered = null;
+    this.lastMove = null;
+    this.bailUntil = until;
+    this.lastEndTime = -Infinity;
+    this.events.push({ type: 'bail', time, until, reason });
   }
 
   drain(): MoveEvent[] {
@@ -177,11 +176,7 @@ export class MoveSystem {
   }
 
   private start(def: MoveDefinition, req: MoveRequest, startTime: number, judged: { rating: Rating; offset: number }, cleanLink: boolean): void {
-    const p = this.timeline.pulseAt(startTime);
-    const pulses = Math.max(1, Math.round(def.durationSec / p.interval));
-    let end = p.nearestTime + pulses * p.interval;
-    if (end - startTime < 0.6 * pulses * p.interval) end += p.interval;
-
+    const end = startTime + def.durationSec;
     const prev = this.lastMove;
     let mirror = false;
     if (def.faceCamera) mirror = req.side < 0;
@@ -191,7 +186,7 @@ export class MoveSystem {
       def,
       startTime,
       endTime: end,
-      anchorTime: p.nearestTime,
+      anchorTime: startTime,
       rating: judged.rating,
       offset: judged.offset,
       mirror,
@@ -205,10 +200,7 @@ export class MoveSystem {
   }
 
   private convert(hop: ActiveMove, def: MoveDefinition, time: number, progress: number): void {
-    const interval = this.timeline.pulseAt(hop.anchorTime).interval;
-    const minRemaining = 0.6 * def.durationSec;
-    let end = hop.endTime;
-    while (end - time < minRemaining) end += interval;
+    const end = Math.max(hop.endTime, time + def.durationSec * MOVE_TUNING.airMinShare);
     const prev = this.lastMove && this.lastMove !== hop ? this.lastMove : null;
     const move: ActiveMove = {
       def,
@@ -236,14 +228,5 @@ export class MoveSystem {
     this.events.push({ type: 'end', move: { ...cur, endTime: time } });
   }
 
-  private bail(time: number, judged: { rating: Rating; offset: number }): void {
-    const interval = this.timeline.pulseAt(time).interval;
-    const until = time + Math.max(MOVE_TUNING.bailMinSec, MOVE_TUNING.bailPulses * interval);
-    this.current = null;
-    this.buffered = null;
-    this.lastMove = null;
-    this.bailUntil = until;
-    this.lastEndTime = -Infinity;
-    this.events.push({ type: 'bail', time, rating: judged.rating, offset: judged.offset, until });
-  }
+
 }

@@ -19,7 +19,7 @@ export interface SessionEvents {
   moveStart: { move: ActiveMove };
   moveScored: { scored: ScoredMove; move: ActiveMove };
   rating: { rating: Rating; offset: number; move: string };
-  bail: { lost: number; rating: Rating };
+  bail: { lost: number; reason: 'crash' };
   bank: { result: BankResult };
   bonus: { name: string; value: number };
   frenzy: { active: boolean };
@@ -45,6 +45,9 @@ export const SESSION_TUNING = {
   /** Crowd members within space × this make a move cramped. */
   crampedFactor: 0.8,
   crampedCount: 2,
+  /** Advanced moves with at least this many people inside their space crash (bail). */
+  crashCount: 4,
+  crashFactor: 0.7,
   impactStrength: 1.2,
   pitScale: { intro: 0.95, verse: 1, chorus: 1.05, breakdown: 1.3, heavy: 1.4, outro: 1 } as Record<string, number>,
 };
@@ -114,29 +117,31 @@ export class PitSession {
     const presses = input.presses.slice().sort((a, b) => a.pressTime - b.pressTime);
     for (const p of presses) this.moves.press(p);
     this.moves.update(songTime);
-    for (const e of this.moves.drain()) {
-      switch (e.type) {
-        case 'start':
-          this.onMoveStart(e.move, input);
-          break;
-        case 'convert':
-          this.player.retargetJump(e.move, songTime);
-          this.events.emit('moveStart', { move: e.move });
-          break;
-        case 'end':
-          this.onMoveEnd(e.move);
-          break;
-        case 'bail': {
-          const lost = this.combo.bail();
-          this.hype.bail();
-          this.pending = null;
-          this.events.emit('rating', { rating: 'miss', offset: e.offset, move: '' });
-          this.events.emit('bail', { lost, rating: e.rating });
-          this.crowd.react('ooh', 0.7, this.player.x, this.player.z);
-          break;
+    // Handlers can raise follow-up events (e.g. a crash bail) – drain until quiet.
+    for (let events = this.moves.drain(); events.length; events = this.moves.drain()) {
+      for (const e of events) {
+        switch (e.type) {
+          case 'start':
+            this.onMoveStart(e.move, input);
+            break;
+          case 'convert':
+            this.player.retargetJump(e.move, songTime);
+            this.events.emit('moveStart', { move: e.move });
+            break;
+          case 'end':
+            this.onMoveEnd(e.move);
+            break;
+          case 'bail': {
+            const lost = this.combo.bail();
+            this.hype.bail();
+            this.pending = null;
+            this.events.emit('bail', { lost, reason: e.reason });
+            this.crowd.react('ooh', 0.7, this.player.x, this.player.z);
+            break;
+          }
+          case 'recover':
+            break;
         }
-        case 'recover':
-          break;
       }
     }
 
@@ -170,7 +175,7 @@ export class PitSession {
     this.clampPlayer();
 
     // Combo chain window / banking.
-    const banked = this.combo.tick(songTime, this.moves.busy, pulse.interval);
+    const banked = this.combo.tick(songTime, this.moves.busy);
     if (banked) this.onBank(banked);
 
     if (this.hype.update(dt)) this.events.emit('frenzy', { active: false });
@@ -203,6 +208,12 @@ export class PitSession {
       frenzy: this.hype.frenzy,
       dropHit: move.rating === 'perfect' && this.nearDrop(move.startTime),
     };
+    // Risk is spatial, not rhythmic: a big move thrown into a packed crowd crashes.
+    if (def.advanced && this.crowd.countNear(p.x, p.z, def.space * SESSION_TUNING.crashFactor) >= SESSION_TUNING.crashCount) {
+      this.events.emit('moveStart', { move });
+      this.moves.forceBail(move.startTime, 'crash');
+      return;
+    }
     this.pending = { ctx, impactDone: false };
     this.events.emit('moveStart', { move });
     this.events.emit('rating', { rating: move.rating, offset: move.offset, move: def.name });

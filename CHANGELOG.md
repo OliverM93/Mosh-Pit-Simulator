@@ -5,6 +5,11 @@ Versionierung nach [SemVer](https://semver.org/lang/de/) (vor 1.0 kann sich alle
 
 ## [Unreleased]
 
+### Geändert (Gameplay)
+
+- Groove-Modell (D-026): Moves in natürlicher Länge, Timing nur noch Bonus, kein Sturz bei Off-Beat; Crash, wenn ein
+  großer Move ins Gedränge geht. Combo-Fenster 0,8 s. HUD zeigt „ON BEAT!“ statt „MISS“; Note nach On-Beat-Anteil.
+
 ### Hinzugefügt (in Arbeit)
 
 - Blender-Pipeline (headless) für echte Figuren aus MakeHuman (CC0) mit CMU-Motion-Capture; Prototyp-Modell und

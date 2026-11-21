@@ -73,7 +73,8 @@ Priorität nach Spielgefühl:
 
 ## Offene Aufgaben (projektweit)
 
-- ⬜ **Rhythmus-Mechanik überdenken** (Owner: Takt-Drücken zu schnell, echte Songs mit Tempowechseln)
+- ✅ Rhythmus-Mechanik überarbeitet: Groove-Modell (D-026)
+- ⬜ Tempowechsel: BPM pro Song-Abschnitt (für Bonus-Bewertung und Licht)
 - ⬜ **Zielplattform festlegen** (Browser vs. eigenständiges Windows-/Steam-Spiel) – entscheidet über einen
   Engine-Wechsel zu Godot 4 vor Phase 2 (siehe `DECISIONS.md` D-021)
 - ⬜ Vor einer Veröffentlichung: Erlaubnis für echte Bandnamen auf Merch/Flyern klären (D-023)
