@@ -4,6 +4,17 @@
 bisschen albern. Rendering-Artefakte der Ära (wackelnde Vertices, Dithering, grobe Texturen, Nebel) sind Stilmittel,
 keine Fehler. Fotorealismus ist ausdrücklich kein Ziel.
 
+## Grafikstufen (Einstellung „GRAPHICS“, Standard PS2)
+
+| Stufe | Interne Auflösung | Vertex-Jitter | Farbstufen / Dithering | Figuren-Detail |
+| --- | --- | --- | --- | --- |
+| PS1 | 270 Zeilen | an | 31 / voll | Basis (8er-Segmente) |
+| PS2 | 540 Zeilen | aus | 63 / halb | doppelt (16er-Segmente) |
+| HD | native Fensterhöhe (max. 1080) | aus | keine Quantisierung | doppelt |
+
+Werte in `src/data/graphics.ts`. Die Tabelle unten beschreibt die PS1-Stufe; PS2/HD schwächen die Effekte ab,
+der Stil (Low-Poly, Pixeltexturen, Licht, Nebel) bleibt gleich.
+
 ## PS1/PS2-Grafikstil (umgesetzt)
 
 | Merkmal | Umsetzung | Ort |

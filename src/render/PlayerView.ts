@@ -20,10 +20,10 @@ export class PlayerView {
   private readonly build: number;
   private readonly height: number;
 
-  constructor(appearance: Appearance = PLAYER_APPEARANCE) {
+  constructor(appearance: Appearance = PLAYER_APPEARANCE, detail = 1) {
     // A touch of self-illumination keeps the player readable in the dark pit.
     const mats = singleCharacterMaterials(resolveLook(appearance), 0x2a2420);
-    this.rig = new CharacterRig(mats, lambert({}));
+    this.rig = new CharacterRig(mats, lambert({}), detail);
     const look = resolveLook(appearance);
     for (const name of Object.keys(look) as (keyof typeof look)[]) this.rig.parts[name].visible = look[name].visible;
     this.rig.root.scale.set(appearance.build, appearance.height, appearance.build);

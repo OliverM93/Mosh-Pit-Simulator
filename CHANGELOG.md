@@ -5,6 +5,11 @@ Versionierung nach [SemVer](https://semver.org/lang/de/) (vor 1.0 kann sich alle
 
 ## [Unreleased]
 
+### Hinzugefügt
+
+- Grafik-Einstellung PS1 / PS2 / HD (Standard PS2): höhere interne Auflösung, ohne Vertex-Jitter, feinere Farben,
+  doppelt so detaillierte Figuren; HD in nativer Auflösung ohne Retro-Filter.
+
 ### Geändert
 
 - Charaktere komplett neu: glatt schattierte Low-Poly-Körper (verjüngte Gliedmaßen, geformter Torso, Kopf mit Kiefer

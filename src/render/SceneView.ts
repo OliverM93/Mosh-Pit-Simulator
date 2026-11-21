@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { GRAPHICS_PRESETS, type GraphicsPreset } from '../data/graphics';
 import type { PitSession } from '../gameplay/PitSession';
 import { CameraController } from './CameraController';
 import { CrowdRenderer } from './CrowdRenderer';
@@ -26,15 +27,17 @@ export class SceneView {
   constructor(
     private readonly session: PitSession,
     private readonly renderer: Renderer,
+    graphics: GraphicsPreset = 'ps2',
   ) {
+    const detail = GRAPHICS_PRESETS[graphics].detail;
     const v = session.venue;
     this.scene.background = new THREE.Color(v.look.fog);
     this.scene.fog = new THREE.Fog(v.look.fog, v.look.fogNear, v.look.fogFar);
     this.venue = buildVenue(v);
     this.venue.setBanner(session.song.artist);
     this.lights = new StageLights(v);
-    this.crowd = new CrowdRenderer(session.crowd.agents);
-    this.player = new PlayerView();
+    this.crowd = new CrowdRenderer(session.crowd.agents, detail);
+    this.player = new PlayerView(undefined, detail);
     this.scene.add(this.venue.group, this.lights.group, this.crowd.group, this.player.group, this.particles.points);
 
     this.cameraCtl = new CameraController(renderer.aspect);

@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { GRAPHICS_PRESETS, type GraphicsPreset } from '../data/graphics';
 import { PS1_UNIFORMS } from './ps1';
 
 const POST_VERT = /* glsl */ `
@@ -12,6 +13,8 @@ const POST_FRAG = /* glsl */ `
 uniform sampler2D tScene;
 uniform vec2 uLowRes;
 uniform float uLevels;
+uniform float uDither;
+uniform float uScanlines;
 uniform float uFlash;
 uniform vec3 uFlashColor;
 uniform float uVignette;
@@ -35,13 +38,13 @@ void main() {
   vec3 c = toSRGB(texture2D(tScene, vUv).rgb);
   // Ordered dither + colour quantisation in low-res pixel space (PS1 15-bit look).
   vec2 px = floor(vUv * uLowRes);
-  float d = bayer4(px) - 0.5;
+  float d = (bayer4(px) - 0.5) * uDither;
   c = floor(c * uLevels + d + 0.5) / uLevels;
   c = mix(c, uFlashColor, uFlash);
   // Vignette + faint scanlines on the output resolution.
   vec2 v = vUv - 0.5;
   c *= 1.0 - dot(v, v) * uVignette;
-  c *= 0.94 + 0.06 * step(0.5, fract(gl_FragCoord.y * 0.5));
+  c *= 1.0 - uScanlines + uScanlines * step(0.5, fract(gl_FragCoord.y * 0.5));
   gl_FragColor = vec4(clamp(c, 0.0, 1.0), 1.0);
 }`;
 
@@ -56,7 +59,9 @@ export class Renderer {
   private readonly postScene = new THREE.Scene();
   private readonly postCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
   private readonly post: THREE.ShaderMaterial;
+  /** Internal render height; 0 = native window height. */
   lowHeight = 270;
+  private snap = true;
   private flash = 0;
 
   constructor(container: HTMLElement) {
@@ -75,6 +80,8 @@ export class Renderer {
         tScene: { value: this.target.texture },
         uLowRes: { value: new THREE.Vector2(480, 270) },
         uLevels: { value: 31 },
+        uDither: { value: 1 },
+        uScanlines: { value: 0.06 },
         uFlash: { value: 0 },
         uFlashColor: { value: new THREE.Color(1, 1, 1) },
         uVignette: { value: 1.1 },
@@ -109,11 +116,24 @@ export class Renderer {
     const w = window.innerWidth;
     const h = window.innerHeight;
     this.gl.setSize(w, h, true);
-    const lh = this.lowHeight;
+    const lh = this.lowHeight > 0 ? this.lowHeight : Math.min(1080, Math.max(1, h));
     const lw = Math.max(1, Math.round(lh * (w / Math.max(1, h))));
     this.target.setSize(lw, lh);
     (this.post.uniforms.uLowRes!.value as THREE.Vector2).set(lw, lh);
-    PS1_UNIFORMS.uSnap.value.set(lw / 2, lh / 2);
+    // Snapping off = snap to a grid far finer than any pixel.
+    if (this.snap) PS1_UNIFORMS.uSnap.value.set(lw / 2, lh / 2);
+    else PS1_UNIFORMS.uSnap.value.set(1e5, 1e5);
+  }
+
+  /** Switch between PS1 / PS2 / HD presentation (see src/data/graphics.ts). */
+  setGraphics(preset: GraphicsPreset): void {
+    const g = GRAPHICS_PRESETS[preset];
+    this.lowHeight = g.renderHeight;
+    this.snap = g.vertexSnap;
+    this.post.uniforms.uLevels!.value = g.colorLevels;
+    this.post.uniforms.uDither!.value = g.dither;
+    this.post.uniforms.uScanlines!.value = g.scanlines;
+    this.resize();
   }
 
   /** Full-screen colour flash (perfect hits, strobes). */

@@ -23,10 +23,10 @@ export class CrowdRenderer {
   private readonly animators: Animator[] = [];
   private readonly agents: readonly CrowdAgent[];
 
-  constructor(agents: readonly CrowdAgent[]) {
+  constructor(agents: readonly CrowdAgent[], detail = 1) {
     this.agents = agents;
     const n = agents.length;
-    const geo = partGeometries();
+    const geo = partGeometries(detail);
     const materials = new Map<string, THREE.Material>();
     for (const def of PART_DEFS) {
       let mat = materials.get(def.kind);
@@ -39,7 +39,7 @@ export class CrowdRenderer {
       this.meshes[def.name] = mesh;
       this.group.add(mesh);
     }
-    this.scratch = new CharacterRig({}, lambert({}));
+    this.scratch = new CharacterRig({}, lambert({}), detail);
     const color = new THREE.Color();
     agents.forEach((a, i) => {
       this.animators.push(new Animator());

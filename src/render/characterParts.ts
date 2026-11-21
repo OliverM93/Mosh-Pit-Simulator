@@ -50,8 +50,12 @@ export const PART_NAMES: PartName[] = PART_DEFS.map((p) => p.name);
 // ------------------------------------------------------------------ geometry helpers
 
 /** Tapered tube hanging down from its pivot. Front (+z) at u = 0.5. */
-function tube(rTop: number, rBottom: number, h: number, seg = 8, dy = 0): THREE.BufferGeometry {
-  const g = new THREE.CylinderGeometry(rTop, rBottom, h, seg, 1, false, Math.PI);
+/** Segment multiplier for the geometry currently being built (graphics preset). */
+let D = 1;
+const seg = (n: number) => Math.max(3, Math.round(n * D));
+
+function tube(rTop: number, rBottom: number, h: number, segments = 8, dy = 0): THREE.BufferGeometry {
+  const g = new THREE.CylinderGeometry(rTop, rBottom, h, seg(segments), Math.max(1, Math.round(D)), false, Math.PI);
   g.translate(0, -h / 2 + dy, 0);
   return g;
 }
@@ -102,7 +106,7 @@ export function merge(parts: THREE.BufferGeometry[]): THREE.BufferGeometry {
 
 /** Partial sphere centred on the body front. */
 function dome(r: number, thetaStart: number, thetaLength: number, phiLength = Math.PI * 2, wSeg = 12, hSeg = 6): THREE.SphereGeometry {
-  return new THREE.SphereGeometry(r, wSeg, hSeg, Math.PI / 2 - phiLength / 2, phiLength, thetaStart, thetaLength);
+  return new THREE.SphereGeometry(r, seg(wSeg), seg(hSeg), Math.PI / 2 - phiLength / 2, phiLength, thetaStart, thetaLength);
 }
 
 const HEAD_Y = 0.17;
@@ -110,14 +114,17 @@ const HEAD_SCALE = new THREE.Vector3(0.92, 1.1, 1);
 
 // ------------------------------------------------------------------ part geometry
 
-let cache: Record<PartName, THREE.BufferGeometry> | null = null;
+const cache = new Map<number, Record<PartName, THREE.BufferGeometry>>();
 
-export function partGeometries(): Record<PartName, THREE.BufferGeometry> {
-  if (cache) return cache;
+/** Body part geometry at a detail level (1 = PS1, 2 = smoother PS2/HD). Cached per level. */
+export function partGeometries(detail = 1): Record<PartName, THREE.BufferGeometry> {
+  const hit = cache.get(detail);
+  if (hit) return hit;
+  D = detail;
 
   // Torso: V-shaped, flattened, sloped shoulders, a hint of chest. The front half gets a planar
   // UV projection so shirt prints lie flat across the whole chest instead of wrapping round the sides.
-  const torsoBase = new THREE.CylinderGeometry(0.25, 0.185, 0.52, 10, 4, false, Math.PI);
+  const torsoBase = new THREE.CylinderGeometry(0.25, 0.185, 0.52, seg(10), seg(4), false, Math.PI);
   const tuv = torsoBase.getAttribute('uv') as THREE.BufferAttribute;
   for (let i = 0; i < tuv.count; i++) {
     const u = tuv.getX(i);
@@ -131,7 +138,7 @@ export function partGeometries(): Record<PartName, THREE.BufferGeometry> {
   });
   torso.translate(0, 0.26, 0);
 
-  const pelvis = new THREE.CylinderGeometry(0.19, 0.2, 0.2, 10, 1, false, Math.PI);
+  const pelvis = new THREE.CylinderGeometry(0.19, 0.2, 0.2, seg(10), 1, false, Math.PI);
   pelvis.scale(1, 1, 0.62);
   pelvis.translate(0, -0.07, 0);
 
@@ -145,7 +152,7 @@ export function partGeometries(): Record<PartName, THREE.BufferGeometry> {
   });
   remapV(skull, 0.25, 1);
   skull.translate(0, HEAD_Y, 0.01);
-  const neck = remapV(new THREE.CylinderGeometry(0.058, 0.07, 0.14, 8, 1, true, Math.PI), 0, 0.24);
+  const neck = remapV(new THREE.CylinderGeometry(0.058, 0.07, 0.14, seg(8), 1, true, Math.PI), 0, 0.24);
   neck.translate(0, 0.04, 0);
   const head = merge([skull, neck]);
 
@@ -173,7 +180,7 @@ export function partGeometries(): Record<PartName, THREE.BufferGeometry> {
   const beanieTop = dome(0.14, 0, 0.5 * Math.PI);
   beanieTop.scale(0.95, 1.25, 1.03);
   beanieTop.translate(0, HEAD_Y + 0.012, 0.004);
-  const fold = new THREE.CylinderGeometry(0.142, 0.142, 0.055, 12, 1, true, Math.PI);
+  const fold = new THREE.CylinderGeometry(0.142, 0.142, 0.055, seg(12), 1, true, Math.PI);
   fold.scale(0.95, 1, 1.03);
   fold.translate(0, HEAD_Y + 0.035, 0.004);
   const beanie = merge([beanieTop, remapV(fold, 0, 0.3)]);
@@ -196,7 +203,7 @@ export function partGeometries(): Record<PartName, THREE.BufferGeometry> {
   gNeck.rotateZ(0.5);
   gNeck.translate(0.28, 0.29, 0.2);
 
-  cache = {
+  const parts: Record<PartName, THREE.BufferGeometry> = {
     pelvis,
     torso,
     head,
@@ -226,7 +233,8 @@ export function partGeometries(): Record<PartName, THREE.BufferGeometry> {
     footR: foot.clone(),
     guitar: merge([gBody, gNeck]),
   };
-  return cache;
+  cache.set(detail, parts);
+  return parts;
 }
 
 // ------------------------------------------------------------------ appearance → per-part look

@@ -26,8 +26,8 @@ export class CharacterRig {
   readonly joints: Record<JointName, THREE.Group>;
   readonly parts: Record<PartName, THREE.Mesh>;
 
-  constructor(materials: Partial<Record<PartName, THREE.Material>>, fallback: THREE.Material) {
-    const geo = partGeometries();
+  constructor(materials: Partial<Record<PartName, THREE.Material>>, fallback: THREE.Material, detail = 1) {
+    const geo = partGeometries(detail);
     const names: JointName[] = ['spine', 'neck', 'shoulderL', 'elbowL', 'shoulderR', 'elbowR', 'hipL', 'kneeL', 'hipR', 'kneeR'];
     this.joints = Object.fromEntries(
       names.map((n) => {

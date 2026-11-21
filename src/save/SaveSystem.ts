@@ -1,3 +1,5 @@
+import type { GraphicsPreset } from '../data/graphics';
+
 /**
  * Versioned local save (localStorage). Highscores, settings and lifetime
  * stats. Progression data (currency, unlocks) is reserved for Phase 3.
@@ -12,6 +14,7 @@ export interface Settings {
   mouseSensitivity: number;
   invertY: boolean;
   showMoveList: boolean;
+  graphics: GraphicsPreset;
 }
 
 export interface HighscoreEntry {
@@ -52,6 +55,7 @@ export function defaultSave(): SaveData {
       mouseSensitivity: 1,
       invertY: false,
       showMoveList: true,
+      graphics: 'ps2',
     },
     highscores: {},
     stats: { songsPlayed: 0, totalMoves: 0, totalPerfects: 0, bestComboEver: 0 },

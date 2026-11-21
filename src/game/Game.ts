@@ -51,6 +51,7 @@ export class Game {
   private endTimer = 0;
   private pausedAt = 0;
   private sessionUnsub: Array<() => void> = [];
+  private attractGraphics = '';
   /** Set when Free Pit restarts the song mid-frame: remaining sub-steps are skipped. */
   private restartedThisFrame = false;
 
@@ -144,6 +145,12 @@ export class Game {
     this.audio.setVolumes(s.masterVolume, s.musicVolume, s.sfxVolume);
     this.input.mouseSensitivity = 0.0026 * s.mouseSensitivity;
     this.input.invertY = s.invertY;
+    this.renderer.setGraphics(s.graphics);
+    // Geometry detail is baked into the scene: rebuild the menu backdrop if the preset changed.
+    if (this.attract && this.attractGraphics !== s.graphics) {
+      this.stopAttract();
+      this.startAttract();
+    }
     if (this.clock) this.clock.userOffset = s.audioOffsetMs / 1000;
   }
 
@@ -152,8 +159,9 @@ export class Game {
   /** Live, silent pit behind the menus. */
   private startAttract(): void {
     const session = new PitSession(SONGS[0]!, this.venue);
-    const view = new SceneView(session, this.renderer);
+    const view = new SceneView(session, this.renderer, this.save.data.settings.graphics);
     this.attract = { session, view };
+    this.attractGraphics = this.save.data.settings.graphics;
   }
 
   private stopAttract(): void {
@@ -174,7 +182,7 @@ export class Game {
 
     const session = new PitSession(song, this.venue);
     this.session = session;
-    this.view = new SceneView(session, this.renderer);
+    this.view = new SceneView(session, this.renderer, this.save.data.settings.graphics);
     this.hud.attach(session, this.mode, this.save.getHighscore(song.id, this.venue.id)?.score ?? 0);
     this.wireSfx(session);
 

@@ -7,6 +7,13 @@ Format: **Datum · Entscheidung** – Begründung · Betroffene Systeme · Alter
 
 ---
 
+### D-024 · 2026-11-21 · Grafikstufen PS1 / PS2 / HD, Standard PS2
+- **Begründung:** Owner findet den PS1-Look zu low-poly. Statt den Stil fest umzustellen, sind die Retro-Effekte
+  jetzt einstellbar; Standard ist PS2 (540p, kein Jitter, runde Figuren). So lässt sich beim Testen vergleichen.
+- **Betroffen:** `src/data/graphics.ts`, `Renderer`, `characterParts.ts`, `SceneView`, `SaveSystem` (neues Feld
+  `graphics`, Default-Merge), Einstellungen.
+- **Alternativen:** Feste Umstellung; echte Modelle aus Blender (nächster Qualitätssprung, siehe D-021/D-022).
+
 ### D-023 · 2026-11-21 · Echte Bandnamen auf Merch und Flyern
 - **Entscheidung (Owner):** Shirts und Wand-Flyer zeigen Namen echter Bands statt fiktiver (Hatebreed, Madball,
   Knocked Loose, Turnstile, Terror, Sick Of It All; Flyer: Agnostic Front, Cro-Mags, Biohazard, Comeback Kid,

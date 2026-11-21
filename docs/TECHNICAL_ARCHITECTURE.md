@@ -108,6 +108,9 @@ nächsten passenden Puls. Liefert Events (`start`, `convert`, `end`, `bail`, `re
 
 - `Renderer`: WebGLRenderer ohne AA → Render-Target ≈ 270 Zeilen (Breite nach Seitenverhältnis), Nearest-Filter →
   Post-Shader: sRGB, 4×4-Bayer-Dithering + Quantisierung auf 31 Stufen/Kanal, Blitz-Overlay, Vignette, Scanlines.
+- **Grafikstufen** (`src/data/graphics.ts`, Einstellung `graphics`): `Renderer.setGraphics()` setzt Auflösung,
+  Snapping, Farbstufen, Dithering, Scanlines live; das Figuren-Detail (Segmentzahl, `partGeometries(detail)`, pro
+  Stufe gecacht) greift beim nächsten Szenenaufbau (nächster Song bzw. sofort im Menü-Hintergrund).
 - `ps1.ts`: `onBeforeCompile`-Patch für Lambert/Basic-Materialien → Vertex-Snapping auf das Low-Res-Pixelraster.
 - `CrowdRenderer`: **ein `InstancedMesh` pro Körperteil** für Crowd + Band (28 Draw Calls total, unabhängig von der
   Crowd-Größe). Pro Agent wird die Pose auf ein unsichtbares Scratch-Rig gelegt und die Teil-Matrizen kopiert;

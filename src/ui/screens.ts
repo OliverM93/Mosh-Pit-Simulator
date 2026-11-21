@@ -4,6 +4,7 @@ import { NAMED_COMBOS } from '../data/comboBonuses';
 import type { SongDefinition } from '../audio/songTypes';
 import type { SessionStats } from '../gameplay/ComboSystem';
 import { MODES, type GameModeDefinition } from '../gameplay/modes';
+import { GRAPHICS_ORDER, GRAPHICS_PRESETS } from '../data/graphics';
 import type { Settings } from '../save/SaveSystem';
 import { el, MenuScreen } from './Menu';
 
@@ -133,6 +134,17 @@ export function settingsScreen(settings: Settings, onChange: (patch: Partial<Set
     s.add({ el: b, activate: flip, adjust: flip });
     menu.appendChild(b);
   };
+  const graphics = el('button');
+  const renderGraphics = () => (graphics.innerHTML = `GRAPHICS<span class="slider-value">◀ ${GRAPHICS_PRESETS[current.graphics].label} ▶</span>`);
+  renderGraphics();
+  const cycleGraphics = (dir: -1 | 1) => {
+    const i = GRAPHICS_ORDER.indexOf(current.graphics);
+    current.graphics = GRAPHICS_ORDER[(i + dir + GRAPHICS_ORDER.length) % GRAPHICS_ORDER.length]!;
+    renderGraphics();
+    onChange({ graphics: current.graphics });
+  };
+  s.add({ el: graphics, adjust: cycleGraphics, activate: () => cycleGraphics(1) });
+  menu.appendChild(graphics);
   const pct = (v: number) => `${Math.round(v * 100)}%`;
   slider('MASTER VOLUME', 'masterVolume', 0, 1, 0.1, pct);
   slider('MUSIC', 'musicVolume', 0, 1, 0.1, pct);
