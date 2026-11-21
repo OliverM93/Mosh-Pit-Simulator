@@ -48,6 +48,7 @@ export function buildVenue(v: VenueDefinition): VenueView {
   floorTex.repeat.set(W / 3, D / 3);
   const floor = new THREE.Mesh(new THREE.PlaneGeometry(W, D, 8, 8), lambert({ map: floorTex }));
   floor.rotation.x = -Math.PI / 2;
+  floor.receiveShadow = true;
   g.add(floor);
 
   // Walls (inward facing planes).

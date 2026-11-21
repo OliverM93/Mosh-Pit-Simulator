@@ -5,6 +5,7 @@ import { createSongPlayback, type SongPlayback } from '../audio/SongPlayer';
 import type { SongDefinition } from '../audio/songTypes';
 import { SONGS } from '../data/songs';
 import { setMerch } from '../render/characterTextures';
+import { CharacterLibrary } from '../render/characters';
 import { UserContentLoader } from './userContent';
 import { VENUES } from '../data/venues';
 import type { VenueDefinition } from '../data/venueTypes';
@@ -54,6 +55,9 @@ export class Game {
   private pausedAt = 0;
   private sessionUnsub: Array<() => void> = [];
   private readonly userContent = new UserContentLoader();
+  /** Blender-built skinned characters (falls back to the procedural box rigs if missing). */
+  private readonly characters = new CharacterLibrary();
+  private charactersLoading: Promise<void> | null = null;
   private userBuffer: AudioBuffer | undefined;
   private attractGraphics = '';
   /** Set when Free Pit restarts the song mid-frame: remaining sub-steps are skipped. */
@@ -163,7 +167,7 @@ export class Game {
   /** Live, silent pit behind the menus. */
   private startAttract(): void {
     const session = new PitSession(SONGS[0]!, this.venue);
-    const view = new SceneView(session, this.renderer, this.save.data.settings.graphics);
+    const view = new SceneView(session, this.renderer, this.save.data.settings.graphics, this.characters);
     this.attract = { session, view };
     this.attractGraphics = this.save.data.settings.graphics;
   }
@@ -175,7 +179,9 @@ export class Game {
 
   /** Own songs/logos from public/user-content (git-ignored). Merch logos must be set before the first scene. */
   private async loadUserContent(): Promise<void> {
-    await this.userContent.load();
+    // PS1 snapping is patched into every material; the shared uniform switches it off for PS2/HD.
+    this.charactersLoading = this.characters.load('./models/', true).catch((err) => console.warn('characters', err));
+    await Promise.all([this.userContent.load(), this.charactersLoading]);
     if (this.userContent.merchLogos.length) setMerch(this.userContent.merchLogos);
     if (!this.attract && !this.session) this.startAttract();
   }
@@ -186,6 +192,7 @@ export class Game {
     if (this.state === 'loading') return; // ignore double activation
     this.state = 'loading';
     await this.audio.unlock();
+    await this.charactersLoading;
     this.userBuffer = undefined;
     let detected = '';
     if (this.userContent.isUserSong(song.id)) {
@@ -208,7 +215,7 @@ export class Game {
 
     const session = new PitSession(song, this.venue);
     this.session = session;
-    this.view = new SceneView(session, this.renderer, this.save.data.settings.graphics);
+    this.view = new SceneView(session, this.renderer, this.save.data.settings.graphics, this.characters);
     this.hud.attach(session, this.mode, this.save.getHighscore(song.id, this.venue.id)?.score ?? 0);
     this.wireSfx(session);
 

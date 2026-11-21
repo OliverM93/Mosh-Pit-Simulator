@@ -3,7 +3,9 @@ import { GRAPHICS_PRESETS, type GraphicsPreset } from '../data/graphics';
 import { MOVE_TUNING } from '../gameplay/MoveSystem';
 import type { PitSession } from '../gameplay/PitSession';
 import { CameraController } from './CameraController';
+import type { CharacterLibrary } from './characters';
 import { CrowdRenderer } from './CrowdRenderer';
+import { SkinnedCrowdRenderer } from './SkinnedCrowdRenderer';
 import { Particles } from './Particles';
 import { PlayerView } from './PlayerView';
 import type { Renderer } from './Renderer';
@@ -19,7 +21,7 @@ export class SceneView {
   readonly cameraCtl: CameraController;
   private readonly venue: VenueView;
   private readonly lights: StageLights;
-  private readonly crowd: CrowdRenderer;
+  private readonly crowd: CrowdRenderer | SkinnedCrowdRenderer;
   private readonly player: PlayerView;
   private readonly particles = new Particles();
   private readonly unsubscribe: Array<() => void> = [];
@@ -29,6 +31,7 @@ export class SceneView {
     private readonly session: PitSession,
     private readonly renderer: Renderer,
     graphics: GraphicsPreset = 'ps2',
+    lib: CharacterLibrary | null = null,
   ) {
     const detail = GRAPHICS_PRESETS[graphics].detail;
     const v = session.venue;
@@ -42,8 +45,24 @@ export class SceneView {
       img.src = session.song.logoUrl;
     }
     this.lights = new StageLights(v);
-    this.crowd = new CrowdRenderer(session.crowd.agents, detail);
-    this.player = new PlayerView(undefined, detail);
+    const skinned = !!lib?.ready;
+    const shadows = skinned && graphics !== 'ps1';
+    renderer.gl.shadowMap.enabled = shadows;
+    renderer.gl.shadowMap.type = THREE.PCFSoftShadowMap;
+    this.crowd = skinned ? new SkinnedCrowdRenderer(session.crowd.agents, lib!, shadows) : new CrowdRenderer(session.crowd.agents, detail);
+    this.player = new PlayerView(undefined, detail, skinned ? lib!.create('player') : null);
+    if (shadows) {
+      // Key light straight over the pit: grounds the dancers with real shadows.
+      const key = new THREE.SpotLight(0xffe0c0, 26, v.room.height + 6, 0.95, 0.6, 1.2);
+      key.position.set(v.pit.x, v.room.height - 0.05, v.pit.z + 0.4);
+      key.target.position.set(v.pit.x, 0, v.pit.z);
+      key.castShadow = true;
+      key.shadow.mapSize.set(1024, 1024);
+      key.shadow.bias = -0.0008;
+      key.shadow.camera.near = 0.5;
+      key.shadow.camera.far = v.room.height + 2;
+      this.scene.add(key, key.target);
+    }
     this.scene.add(this.venue.group, this.lights.group, this.crowd.group, this.player.group, this.particles.points);
 
     this.cameraCtl = new CameraController(renderer.aspect);
