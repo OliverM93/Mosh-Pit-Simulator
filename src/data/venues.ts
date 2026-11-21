@@ -18,7 +18,7 @@ export const VENUES: VenueDefinition[] = [
       stageColors: [0xff2a3a, 0x3a6bff, 0xffa020, 0x9b30ff],
       wallTint: 0x8a6d63,
       floorTint: 0x6a6460,
-      posters: ['NO GODS NO MASTERS', 'SXE', 'SATURDAY MATINEE', 'PIT RULES', 'DIY OR DIE', 'BREAKDOWN'],
+      posters: ['AGNOSTIC FRONT', 'CRO-MAGS', 'BIOHAZARD', 'COMEBACK KID', 'KUBLAI KHAN', 'TERROR'],
     },
   },
 ];

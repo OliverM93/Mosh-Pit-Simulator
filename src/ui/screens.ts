@@ -13,7 +13,7 @@ export function titleScreen(onStart: () => void): MenuScreen {
     el('div', 'logo', 'MOSH<br>PIT'),
     el('div', 'subtitle', 'HARDCORE ARCADE SIMULATOR'),
     el('div', 'blink', 'PRESS ANY KEY'),
-    el('div', 'footnote', 'Prototype · Phase 1 · all music is synthesised placeholder audio · bands are fictional'),
+    el('div', 'footnote', 'Prototype · Phase 1 · placeholder songs are synthesised in-game, not recordings by the bands named on shirts and flyers'),
   );
   s.onAny = () => onStart();
   s.el.addEventListener('click', () => onStart());

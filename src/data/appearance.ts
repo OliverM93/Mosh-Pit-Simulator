@@ -3,7 +3,7 @@ import type { Rng } from '../core/random';
 /**
  * Character look as pure data (headless). The renderer maps these ids to
  * geometry variants and texture-atlas cells. Phase 3 (outfits/unlocks) builds
- * on this catalogue. All prints are fictional – no real band or brand logos.
+ * on this catalogue. Band merch shows real band names as plain text (MERCH_BANDS) – no official logos.
  */
 
 export type HeadwearId = 'none' | 'cap' | 'cap_back' | 'beanie';
@@ -27,22 +27,36 @@ export interface PantsStyle {
   cell: number;
 }
 
+/**
+ * Real band names printed on merch and flyers (text only, own typography – no
+ * official logos). Central list so names can be swapped or cleared before any
+ * commercial release (trademark/permission question, see docs/DECISIONS.md D-023).
+ */
+export const MERCH_BANDS = {
+  skullTee: 'HATEBREED',
+  blackTee: 'MADBALL',
+  jaggedTee: 'KNOCKED LOOSE',
+  whiteTee: 'TURNSTILE',
+  greyTee: 'TERROR',
+  hoodie: 'SICK OF IT ALL',
+} as const;
+
 /** Shirt atlas: 4 columns × 5 rows. */
 export const SHIRT_ATLAS = { cols: 4, rows: 5 };
 export const SHIRT_FABRIC = { black: 12, white: 13, pinstripe: 14, flannel: 15, cream: 16, camo: 17, grey: 18 };
 
 export const SHIRT_STYLES: ShirtStyle[] = [
-  { id: 'tee_skull', name: 'Skull Tee', front: 0, fabric: SHIRT_FABRIC.black, longSleeves: false, tint: false },
-  { id: 'tee_staytrue', name: 'Stay True Tee', front: 1, fabric: SHIRT_FABRIC.black, longSleeves: false, tint: false },
-  { id: 'tee_brickface', name: 'Brickface Band Tee', front: 2, fabric: SHIRT_FABRIC.black, longSleeves: false, tint: false },
-  { id: 'tee_halo', name: 'Concrete Halo Tee', front: 3, fabric: SHIRT_FABRIC.white, longSleeves: false, tint: false },
+  { id: 'tee_skull', name: 'Hatebreed Tee', front: 0, fabric: SHIRT_FABRIC.black, longSleeves: false, tint: false },
+  { id: 'tee_staytrue', name: 'Madball Tee', front: 1, fabric: SHIRT_FABRIC.black, longSleeves: false, tint: false },
+  { id: 'tee_brickface', name: 'Knocked Loose Tee', front: 2, fabric: SHIRT_FABRIC.black, longSleeves: false, tint: false },
+  { id: 'tee_halo', name: 'Turnstile Tee', front: 3, fabric: SHIRT_FABRIC.white, longSleeves: false, tint: false },
   { id: 'tee_plain', name: 'Plain Tee', front: 4, fabric: SHIRT_FABRIC.white, longSleeves: false, tint: true },
   { id: 'jersey', name: 'Pinstripe Jersey', front: 5, fabric: SHIRT_FABRIC.pinstripe, longSleeves: false, tint: false },
   { id: 'flannel', name: 'Flannel', front: 6, fabric: SHIRT_FABRIC.flannel, longSleeves: true, tint: false },
-  { id: 'hoodie', name: 'Black Hoodie', front: 7, fabric: SHIRT_FABRIC.black, longSleeves: true, tint: false },
+  { id: 'hoodie', name: 'Sick Of It All Hoodie', front: 7, fabric: SHIRT_FABRIC.black, longSleeves: true, tint: false },
   { id: 'varsity', name: 'Varsity Jacket', front: 8, fabric: SHIRT_FABRIC.cream, longSleeves: true, tint: false },
   { id: 'puffer', name: 'Camo Puffer', front: 9, fabric: SHIRT_FABRIC.camo, longSleeves: true, tint: false },
-  { id: 'tee_lowrider', name: 'Lowrider Tactics Tee', front: 10, fabric: SHIRT_FABRIC.grey, longSleeves: false, tint: false },
+  { id: 'tee_lowrider', name: 'Terror Tee', front: 10, fabric: SHIRT_FABRIC.grey, longSleeves: false, tint: false },
   { id: 'tee_mosh', name: 'MOSH Tee', front: 11, fabric: SHIRT_FABRIC.white, longSleeves: false, tint: false },
 ];
 

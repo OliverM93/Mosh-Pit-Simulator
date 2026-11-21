@@ -3,7 +3,8 @@ import { BEATDOWN, HARDCORE, PUNK } from './patterns';
 
 /**
  * Song catalogue. All music is procedurally synthesised placeholder audio
- * created for this project (no third-party recordings). Bands are fictional.
+ * created for this project (no third-party recordings). The performing bands
+ * are fictional on purpose: crediting synthesised songs to real bands would misattribute them.
  * Add a song: append a definition – sections/events drive gameplay, the
  * `audio` block decides how it sounds. See docs/AUDIO_AND_MUSIC.md.
  */

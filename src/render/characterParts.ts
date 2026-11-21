@@ -115,8 +115,15 @@ let cache: Record<PartName, THREE.BufferGeometry> | null = null;
 export function partGeometries(): Record<PartName, THREE.BufferGeometry> {
   if (cache) return cache;
 
-  // Torso: V-shaped, flattened, sloped shoulders, a hint of chest.
-  const torso = deform(new THREE.CylinderGeometry(0.25, 0.185, 0.52, 10, 4, false, Math.PI), (p) => {
+  // Torso: V-shaped, flattened, sloped shoulders, a hint of chest. The front half gets a planar
+  // UV projection so shirt prints lie flat across the whole chest instead of wrapping round the sides.
+  const torsoBase = new THREE.CylinderGeometry(0.25, 0.185, 0.52, 10, 4, false, Math.PI);
+  const tuv = torsoBase.getAttribute('uv') as THREE.BufferAttribute;
+  for (let i = 0; i < tuv.count; i++) {
+    const u = tuv.getX(i);
+    if (u > 0.25 && u < 0.75) tuv.setX(i, 0.5 - 0.25 * Math.sin(2 * Math.PI * u));
+  }
+  const torso = deform(torsoBase, (p) => {
     const rel = p.y + 0.26;
     p.z *= 0.58;
     if (rel > 0.45) p.x *= 0.8;

@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { Rng } from '../core/random';
-import { CAP_COUNT, FACE_COUNT, PANTS_ATLAS, SHIRT_ATLAS, TATTOO_COUNT } from '../data/appearance';
+import { CAP_COUNT, FACE_COUNT, MERCH_BANDS, PANTS_ATLAS, SHIRT_ATLAS, TATTOO_COUNT } from '../data/appearance';
 
 /**
  * Hand-painted (procedural) texture atlases for characters. Cells are 64 px,
@@ -10,6 +10,8 @@ import { CAP_COUNT, FACE_COUNT, PANTS_ATLAS, SHIRT_ATLAS, TATTOO_COUNT } from '.
  */
 
 export const CELL = 64;
+/** Atlases are painted at 2× resolution so prints and faces stay readable up close. */
+const RES = 2;
 
 export interface Atlas {
   texture: THREE.Texture;
@@ -21,14 +23,14 @@ type Painter = (ctx: CanvasRenderingContext2D, rng: Rng) => void;
 
 function makeAtlas(cols: number, rows: number, painters: Painter[], seed: number): Atlas {
   const c = document.createElement('canvas');
-  c.width = cols * CELL;
-  c.height = rows * CELL;
+  c.width = cols * CELL * RES;
+  c.height = rows * CELL * RES;
   const ctx = c.getContext('2d')!;
   ctx.imageSmoothingEnabled = false;
   const rng = new Rng(seed);
   painters.forEach((paint, i) => {
     ctx.save();
-    ctx.translate((i % cols) * CELL, Math.floor(i / cols) * CELL);
+    ctx.setTransform(RES, 0, 0, RES, (i % cols) * CELL * RES, Math.floor(i / cols) * CELL * RES);
     ctx.beginPath();
     ctx.rect(0, 0, CELL, CELL);
     ctx.clip();
@@ -73,6 +75,24 @@ function text(ctx: CanvasRenderingContext2D, s: string, x: number, y: number, si
   ctx.fillText(s, x, y);
 }
 
+const PRINT_FONT = "Impact, 'Arial Black', 'Arial Narrow', sans-serif";
+
+/**
+ * Band name on the chest: words on separate lines, font shrunk until every
+ * line fits the chest (u 0.25–0.75 = 32 px of the 64 px cell, planar-projected).
+ */
+function bandPrint(ctx: CanvasRenderingContext2D, name: string, top: number, bottom: number, color: string, font = PRINT_FONT): void {
+  const words = name.split(' ');
+  const lineH = (bottom - top) / words.length;
+  let size = Math.min(12, lineH);
+  ctx.font = `bold ${size}px ${font}`;
+  while (size > 5 && Math.max(...words.map((w) => ctx.measureText(w).width)) > 26) {
+    size -= 1;
+    ctx.font = `bold ${size}px ${font}`;
+  }
+  words.forEach((w, i) => text(ctx, w, 32, top + lineH * (i + 0.5), size, color, font));
+}
+
 /** Torso cells: print sits around u = 0.5 (x = 32), chest height ≈ y 14–34. */
 function skull(ctx: CanvasRenderingContext2D, x: number, y: number, ink: string): void {
   ctx.fillStyle = ink;
@@ -103,26 +123,24 @@ const SHIRT_PAINTERS: Painter[] = [
   // 0 skull tee
   (c, r) => {
     fill(c, '#141414');
-    skull(c, 32, 22, '#e8e4d8');
-    text(c, 'NO MERCY', 32, 37, 7, '#e8e4d8');
+    bandPrint(c, MERCH_BANDS.skullTee, 6, 15, '#c81818');
+    skull(c, 32, 26, '#e8e4d8');
     seams(c, '#000');
     grain(c, r);
   },
-  // 1 stay true tee
+  // 1 black band tee
   (c, r) => {
     fill(c, '#151515');
-    text(c, 'STAY', 32, 17, 10, '#f0f0f0', 'serif');
-    text(c, 'TRUE', 32, 28, 10, '#f0f0f0', 'serif');
+    bandPrint(c, MERCH_BANDS.blackTee, 10, 32, '#f0f0f0');
     c.fillStyle = '#c01818';
     c.fillRect(22, 34, 20, 2);
     seams(c, '#000');
     grain(c, r);
   },
-  // 2 fictional band tee "BRICKFACE" with jagged logo
+  // 2 band tee with jagged underline
   (c, r) => {
     fill(c, '#131313');
-    text(c, 'BRICK', 32, 17, 9, '#d8d8d8', 'serif');
-    text(c, 'FACE', 32, 27, 9, '#d8d8d8', 'serif');
+    bandPrint(c, MERCH_BANDS.jaggedTee, 10, 31, '#d8d8d8');
     c.strokeStyle = '#d8d8d8';
     for (let i = 0; i < 6; i++) {
       c.beginPath();
@@ -136,12 +154,11 @@ const SHIRT_PAINTERS: Painter[] = [
   // 3 white tee, black print
   (c, r) => {
     fill(c, '#ecebe6');
-    text(c, 'CONCRETE', 32, 18, 8, '#111');
+    bandPrint(c, MERCH_BANDS.whiteTee, 12, 24, '#111');
     c.fillStyle = '#111';
     c.beginPath();
-    c.arc(32, 28, 5, 0, Math.PI * 2);
+    c.arc(32, 32, 5, 0, Math.PI * 2);
     c.fill();
-    text(c, 'HALO', 32, 37, 8, '#111');
     seams(c, '#bbb');
     grain(c, r, 0.4, 0.08);
   },
@@ -176,7 +193,7 @@ const SHIRT_PAINTERS: Painter[] = [
   // 7 black hoodie with small chest print + front pocket
   (c, r) => {
     fill(c, '#161616');
-    text(c, 'HC', 38, 14, 6, '#bdbdbd');
+    bandPrint(c, MERCH_BANDS.hoodie, 8, 30, '#bdbdbd');
     c.fillStyle = '#0c0c0c';
     c.fillRect(20, 38, 24, 14);
     c.fillStyle = '#2a2a2a';
@@ -205,16 +222,12 @@ const SHIRT_PAINTERS: Painter[] = [
     c.fillStyle = '#222';
     c.fillRect(31, 0, 2, CELL);
   },
-  // 10 grey tee with fictional band print
+  // 10 grey band tee
   (c, r) => {
     fill(c, '#5f5f62');
-    text(c, 'LOWRIDER', 32, 17, 7, '#111');
+    bandPrint(c, MERCH_BANDS.greyTee, 12, 26, '#111');
     c.fillStyle = '#111';
-    c.fillRect(24, 22, 16, 10);
-    c.fillStyle = '#5f5f62';
-    c.fillRect(27, 25, 4, 4);
-    c.fillRect(33, 25, 4, 4);
-    text(c, 'TACTICS', 32, 37, 7, '#111');
+    c.fillRect(22, 29, 20, 2);
     seams(c, '#444');
     grain(c, r);
   },
