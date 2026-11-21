@@ -1,0 +1,27 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+*.tsbuildinfo
+coverage/
+
+# Logs
+npm-debug.log*
+*.log
+
+# Editors / OS
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
+
+# Local environment / secrets – never commit
+.env
+.env.*
+!.env.example
+.claude/settings.local.json
+
+# Large source assets that are not yet tracked via LFS
+*.blend1
