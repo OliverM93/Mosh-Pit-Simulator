@@ -35,6 +35,11 @@ export class SceneView {
     this.scene.fog = new THREE.Fog(v.look.fog, v.look.fogNear, v.look.fogFar);
     this.venue = buildVenue(v);
     this.venue.setBanner(session.song.artist);
+    if (session.song.logoUrl) {
+      const img = new Image();
+      img.onload = () => this.venue.setBannerImage(img);
+      img.src = session.song.logoUrl;
+    }
     this.lights = new StageLights(v);
     this.crowd = new CrowdRenderer(session.crowd.agents, detail);
     this.player = new PlayerView(undefined, detail);

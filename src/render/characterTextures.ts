@@ -77,6 +77,40 @@ function text(ctx: CanvasRenderingContext2D, s: string, x: number, y: number, si
 
 const PRINT_FONT = "Impact, 'Arial Black', 'Arial Narrow', sans-serif";
 
+type MerchSlot = keyof typeof MERCH_BANDS;
+const MERCH_SLOTS = Object.keys(MERCH_BANDS) as MerchSlot[];
+const merchOverride = new Map<MerchSlot, { band: string; image: HTMLImageElement | null }>();
+
+/**
+ * User merch (public/user-content/songs.json → "merch"): entries replace the six
+ * shirt motifs in order, with name and optional logo image. Call before the
+ * atlases are first built.
+ */
+export function setMerch(entries: { band: string; image: HTMLImageElement | null }[]): void {
+  merchOverride.clear();
+  entries.slice(0, MERCH_SLOTS.length).forEach((e, i) => merchOverride.set(MERCH_SLOTS[i]!, e));
+  atlases = null;
+}
+
+/** Band merch print: the user's logo if provided, else the band name as text. Returns true if a logo was drawn. */
+function merchPrint(ctx: CanvasRenderingContext2D, slot: MerchSlot, top: number, bottom: number, color: string): boolean {
+  const o = merchOverride.get(slot);
+  if (o?.image) {
+    const img = o.image;
+    const maxW = 30;
+    const maxH = 30;
+    const k = Math.min(maxW / img.width, maxH / img.height);
+    const w = img.width * k;
+    const h = img.height * k;
+    ctx.imageSmoothingEnabled = true;
+    ctx.drawImage(img, 32 - w / 2, 6 + (maxH - h) / 2, w, h);
+    ctx.imageSmoothingEnabled = false;
+    return true;
+  }
+  bandPrint(ctx, o?.band ?? MERCH_BANDS[slot], top, bottom, color);
+  return false;
+}
+
 /**
  * Band name on the chest: words on separate lines, font shrunk until every
  * line fits the chest (u 0.25–0.75 = 32 px of the 64 px cell, planar-projected).
@@ -123,15 +157,14 @@ const SHIRT_PAINTERS: Painter[] = [
   // 0 skull tee
   (c, r) => {
     fill(c, '#141414');
-    bandPrint(c, MERCH_BANDS.skullTee, 6, 15, '#c81818');
-    skull(c, 32, 26, '#e8e4d8');
+    if (!merchPrint(c, 'skullTee', 6, 15, '#c81818')) skull(c, 32, 26, '#e8e4d8');
     seams(c, '#000');
     grain(c, r);
   },
   // 1 black band tee
   (c, r) => {
     fill(c, '#151515');
-    bandPrint(c, MERCH_BANDS.blackTee, 10, 32, '#f0f0f0');
+    merchPrint(c, 'blackTee', 10, 32, '#f0f0f0');
     c.fillStyle = '#c01818';
     c.fillRect(22, 34, 20, 2);
     seams(c, '#000');
@@ -140,7 +173,7 @@ const SHIRT_PAINTERS: Painter[] = [
   // 2 band tee with jagged underline
   (c, r) => {
     fill(c, '#131313');
-    bandPrint(c, MERCH_BANDS.jaggedTee, 10, 31, '#d8d8d8');
+    merchPrint(c, 'jaggedTee', 10, 31, '#d8d8d8');
     c.strokeStyle = '#d8d8d8';
     for (let i = 0; i < 6; i++) {
       c.beginPath();
@@ -154,11 +187,12 @@ const SHIRT_PAINTERS: Painter[] = [
   // 3 white tee, black print
   (c, r) => {
     fill(c, '#ecebe6');
-    bandPrint(c, MERCH_BANDS.whiteTee, 12, 24, '#111');
-    c.fillStyle = '#111';
-    c.beginPath();
-    c.arc(32, 32, 5, 0, Math.PI * 2);
-    c.fill();
+    if (!merchPrint(c, 'whiteTee', 12, 24, '#111')) {
+      c.fillStyle = '#111';
+      c.beginPath();
+      c.arc(32, 32, 5, 0, Math.PI * 2);
+      c.fill();
+    }
     seams(c, '#bbb');
     grain(c, r, 0.4, 0.08);
   },
@@ -193,7 +227,7 @@ const SHIRT_PAINTERS: Painter[] = [
   // 7 black hoodie with small chest print + front pocket
   (c, r) => {
     fill(c, '#161616');
-    bandPrint(c, MERCH_BANDS.hoodie, 8, 30, '#bdbdbd');
+    merchPrint(c, 'hoodie', 8, 30, '#bdbdbd');
     c.fillStyle = '#0c0c0c';
     c.fillRect(20, 38, 24, 14);
     c.fillStyle = '#2a2a2a';
@@ -225,7 +259,7 @@ const SHIRT_PAINTERS: Painter[] = [
   // 10 grey band tee
   (c, r) => {
     fill(c, '#5f5f62');
-    bandPrint(c, MERCH_BANDS.greyTee, 12, 26, '#111');
+    merchPrint(c, 'greyTee', 12, 26, '#111');
     c.fillStyle = '#111';
     c.fillRect(22, 29, 20, 2);
     seams(c, '#444');

@@ -8,6 +8,8 @@ export interface VenueView {
   group: THREE.Group;
   /** Update the backdrop banner (band name). */
   setBanner(text: string): void;
+  /** Show a band logo on the backdrop banner instead of text. */
+  setBannerImage(img: HTMLImageElement): void;
 }
 
 function hex(n: number): string {
@@ -211,6 +213,18 @@ export function buildVenue(v: VenueDefinition): VenueView {
     group: g,
     setBanner(text: string) {
       bannerTex.image = bannerCanvas(text);
+      bannerTex.needsUpdate = true;
+    },
+    setBannerImage(img: HTMLImageElement) {
+      const c = document.createElement('canvas');
+      c.width = 256;
+      c.height = 64;
+      const ctx = c.getContext('2d')!;
+      ctx.fillStyle = '#0c0c0c';
+      ctx.fillRect(0, 0, 256, 64);
+      const k = Math.min(240 / img.width, 56 / img.height);
+      ctx.drawImage(img, 128 - (img.width * k) / 2, 32 - (img.height * k) / 2, img.width * k, img.height * k);
+      bannerTex.image = c;
       bannerTex.needsUpdate = true;
     },
   };

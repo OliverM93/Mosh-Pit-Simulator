@@ -82,6 +82,8 @@ export interface SongDefinition {
   audio: SynthAudioDef | FileAudioDef;
   /** Short flavour text for the song select screen. */
   blurb: string;
+  /** Optional band logo image (user content) for the stage banner. */
+  logoUrl?: string;
 }
 
 export const DEFAULT_PULSE_BEATS: Record<SectionType, number> = {

@@ -4,6 +4,8 @@ import { SongClock } from '../audio/SongClock';
 import { createSongPlayback, type SongPlayback } from '../audio/SongPlayer';
 import type { SongDefinition } from '../audio/songTypes';
 import { SONGS } from '../data/songs';
+import { setMerch } from '../render/characterTextures';
+import { UserContentLoader } from './userContent';
 import { VENUES } from '../data/venues';
 import type { VenueDefinition } from '../data/venueTypes';
 import { getMode, type GameModeDefinition } from '../gameplay/modes';
@@ -17,7 +19,7 @@ import { SceneView } from '../render/SceneView';
 import { SaveSystem, type Settings } from '../save/SaveSystem';
 import { Hud } from '../ui/Hud';
 import { UIManager, type MenuScreen } from '../ui/Menu';
-import { helpScreen, mainMenu, pauseScreen, resultsScreen, settingsScreen, songSelect, titleScreen } from '../ui/screens';
+import { helpScreen, mainMenu, messageScreen, pauseScreen, resultsScreen, settingsScreen, songSelect, titleScreen } from '../ui/screens';
 
 type State = 'title' | 'menu' | 'loading' | 'playing' | 'paused' | 'ending' | 'results';
 
@@ -51,6 +53,8 @@ export class Game {
   private endTimer = 0;
   private pausedAt = 0;
   private sessionUnsub: Array<() => void> = [];
+  private readonly userContent = new UserContentLoader();
+  private userBuffer: AudioBuffer | undefined;
   private attractGraphics = '';
   /** Set when Free Pit restarts the song mid-frame: remaining sub-steps are skipped. */
   private restartedThisFrame = false;
@@ -76,8 +80,8 @@ export class Game {
       this.attract?.view.resize();
     });
 
-    this.startAttract();
     this.ui.show(titleScreen(() => this.leaveTitle()));
+    void this.loadUserContent();
     requestAnimationFrame((t) => this.frame(t));
   }
 
@@ -114,7 +118,7 @@ export class Game {
     this.state = 'menu';
     this.showScreen(
       songSelect(
-        SONGS,
+        [...SONGS, ...this.userContent.listing()],
         this.mode,
         this.venue.name,
         (id) => this.save.getHighscore(id, this.venue.id)?.score ?? 0,
@@ -169,13 +173,35 @@ export class Game {
     this.attract = null;
   }
 
+  /** Own songs/logos from public/user-content (git-ignored). Merch logos must be set before the first scene. */
+  private async loadUserContent(): Promise<void> {
+    await this.userContent.load();
+    if (this.userContent.merchLogos.length) setMerch(this.userContent.merchLogos);
+    if (!this.attract && !this.session) this.startAttract();
+  }
+
   // ------------------------------------------------------------------ session lifecycle
 
   private async startSong(song: SongDefinition): Promise<void> {
     if (this.state === 'loading') return; // ignore double activation
     this.state = 'loading';
-    this.song = song;
     await this.audio.unlock();
+    this.userBuffer = undefined;
+    let detected = '';
+    if (this.userContent.isUserSong(song.id)) {
+      this.showScreen(messageScreen('LOADING', `${song.artist.toUpperCase()} – ${song.title.toUpperCase()}<br>decoding and detecting the beat…`));
+      try {
+        const prepared = await this.userContent.prepare(song.id, this.audio);
+        song = prepared.song;
+        this.userBuffer = prepared.buffer;
+        if (prepared.estimate) detected = `AUTO-DETECTED ${prepared.estimate.bpm} BPM – OFFSET ${prepared.estimate.offsetSec.toFixed(2)} S`;
+      } catch (err) {
+        this.state = 'menu';
+        this.showScreen(messageScreen('SONG ERROR', String(err instanceof Error ? err.message : err), () => this.showSongSelect()));
+        return;
+      }
+    }
+    this.song = song;
     this.endSession();
     this.stopAttract();
     this.ui.hide();
@@ -187,17 +213,25 @@ export class Game {
     this.wireSfx(session);
 
     const ctx = this.audio.ctx!;
-    this.playback = createSongPlayback(this.audio, session.timeline);
+    this.playback = createSongPlayback(this.audio, session.timeline, this.userBuffer);
     await this.playback.load();
     this.clock = new SongClock(ctx);
     this.clock.userOffset = this.save.data.settings.audioOffsetMs / 1000;
-    const start = ctx.currentTime + 1.2;
+    const lead = this.leadIn(1.2);
+    const start = ctx.currentTime + lead;
     this.playback.start(start);
     this.clock.start(start);
-    this.lastSongTime = -1.2;
+    this.lastSongTime = -lead;
     this.state = 'playing';
     this.input.requestPointerLock();
-    this.hud.showHint(this.input.lastDevice === 'gamepad' ? 'X = 2-STEP ON THE BEAT · BACK = MOVE LIST' : 'Q = 2-STEP ON THE BEAT · CLICK TO LOOK AROUND · H = MOVE LIST', 6);
+    if (detected) this.hud.showHint(detected, 5);
+    else this.hud.showHint(this.input.lastDevice === 'gamepad' ? 'X = 2-STEP ON THE BEAT · BACK = MOVE LIST' : 'Q = 2-STEP ON THE BEAT · CLICK TO LOOK AROUND · H = MOVE LIST', 6);
+  }
+
+  /** Recorded songs may have music before beat 0 (offsetSec): start early enough to play it. */
+  private leadIn(min: number): number {
+    const a = this.song.audio;
+    return a.kind === 'file' ? Math.max(min, a.offsetSec + 0.3) : min;
   }
 
   private wireSfx(s: PitSession): void {
@@ -239,12 +273,13 @@ export class Game {
     if (this.mode.loopSong) {
       // Free Pit: start the next loop right away, keep the score running.
       const ctx = this.audio.ctx!;
-      const start = ctx.currentTime + 0.6;
+      const lead = this.leadIn(0.6);
+      const start = ctx.currentTime + lead;
       s.restart(false);
       this.restartedThisFrame = true;
       this.playback?.start(start);
       this.clock?.start(start);
-      this.lastSongTime = -0.6;
+      this.lastSongTime = -lead;
       return;
     }
     this.state = 'ending';

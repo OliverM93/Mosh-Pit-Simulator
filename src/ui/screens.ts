@@ -21,6 +21,19 @@ export function titleScreen(onStart: () => void): MenuScreen {
   return s;
 }
 
+/** Simple message page (loading, errors). With `onBack` it gets a BACK button. */
+export function messageScreen(title: string, html: string, onBack?: () => void): MenuScreen {
+  const s = new MenuScreen();
+  s.el.append(el('h1', 'screen-title', title), el('div', 'panel', html));
+  if (onBack) {
+    const b = el('button', '', 'BACK');
+    s.add({ el: b, activate: onBack });
+    s.el.appendChild(b);
+    s.onBack = onBack;
+  }
+  return s;
+}
+
 export function mainMenu(onMode: (m: GameModeDefinition) => void, onSettings: () => void, onHelp: () => void): MenuScreen {
   const s = new MenuScreen();
   s.el.append(el('div', 'logo', 'MOSH PIT'), el('div', 'subtitle', ' '));
@@ -56,7 +69,7 @@ export function songSelect(
     const b = el(
       'button',
       '',
-      `${song.title.toUpperCase()}<span class="meta">${song.bpm} BPM · ${song.genre.toUpperCase()}</span>` +
+      `${song.audio.kind === 'file' ? '★ ' : ''}${song.title.toUpperCase()}<span class="meta">${song.bpm ? `${song.bpm} BPM` : 'AUTO BPM'} · ${song.genre.toUpperCase()}</span>` +
         `<span class="desc">${song.artist} — ${song.blurb}${hi > 0 ? ` · BEST ${formatScore(hi)}` : ''}</span>`,
     );
     s.add({ el: b, activate: () => onPick(song) });

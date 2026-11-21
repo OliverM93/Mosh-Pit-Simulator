@@ -25,3 +25,9 @@ Thumbs.db
 
 # Large source assets that are not yet tracked via LFS
 *.blend1
+
+# Private user content (own songs, band logos) – never commit, the repo is public
+public/user-content/
+
+# External source data for the asset build (MakeHuman, CMU mocap) and Blender venv
+.cache/

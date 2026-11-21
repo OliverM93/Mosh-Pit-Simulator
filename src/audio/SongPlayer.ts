@@ -11,9 +11,9 @@ export interface SongPlayback {
   stop(): void;
 }
 
-export function createSongPlayback(engine: AudioEngine, timeline: SongTimeline): SongPlayback {
+export function createSongPlayback(engine: AudioEngine, timeline: SongTimeline, buffer?: AudioBuffer): SongPlayback {
   const audio = timeline.song.audio;
-  return audio.kind === 'synth' ? new SynthSongPlayer(engine, timeline, audio) : new FileSongPlayer(engine, audio);
+  return audio.kind === 'synth' ? new SynthSongPlayer(engine, timeline, audio) : new FileSongPlayer(engine, audio, buffer);
 }
 
 const STEPS_PER_BEAT = 4;
@@ -169,22 +169,21 @@ export class SynthSongPlayer implements SongPlayback {
   }
 }
 
-/**
- * Plays a recorded song file. Prepared for real songs; the current catalogue
- * only uses synth songs, so this path is not exercised yet.
- */
+/** Plays a recorded song file (user content), optionally from an already decoded buffer. */
 export class FileSongPlayer implements SongPlayback {
   private readonly engine: AudioEngine;
   private readonly audio: FileAudioDef;
   private buffer: AudioBuffer | null = null;
   private source: AudioBufferSourceNode | null = null;
 
-  constructor(engine: AudioEngine, audio: FileAudioDef) {
+  constructor(engine: AudioEngine, audio: FileAudioDef, buffer?: AudioBuffer) {
     this.engine = engine;
     this.audio = audio;
+    this.buffer = buffer ?? null;
   }
 
   async load(): Promise<void> {
+    if (this.buffer) return;
     const ctx = this.engine.ctx;
     if (!ctx) throw new Error('AudioEngine not unlocked');
     const res = await fetch(this.audio.url);
