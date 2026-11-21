@@ -21,7 +21,10 @@ Ziel: Ein Song ist vollständig spielbar und fühlt sich wie ein kleiner Arcade-
 - ✅ Modi Arcade + Free Pit, Ergebnisbildschirm mit Note, Highscore/Best Combo gespeichert
 - ✅ Gamepad-Unterstützung (Standard-Mapping) – ⚠ noch nicht mit echter Hardware getestet
 
-## Phase 2 – Gameplay Polish ⬜ (nächste Phase)
+## Phase 2 – Gameplay Polish 🟡 (nächste Phase)
+
+- ✅ Figuren-Look überarbeitet: glatt schattierte Low-Poly-Charaktere im Stil später 90er-3D-Fighter statt Quader,
+  Kleidung/Tattoos/Gesichter per Atlas, Looks nach Referenzfotos des Owners
 
 Priorität nach Spielgefühl:
 1. ⬜ **Playtest-Runde mit echten Menschen** auf echter Hardware: Timing-Fenster, Bail-Härte, Chain-Window,
@@ -43,7 +46,7 @@ Priorität nach Spielgefühl:
 - ⬜ Career Mode: Venue-Leiter vom Keller zum Festival, Ziele pro Konzert
 - ⬜ Währung/Reputation aus Ergebnissen, Noten → Belohnungen
 - ⬜ Unlock-System (Save-Format v2 mit Migration)
-- ⬜ Charakter-Editor: Körperformen, Frisuren, Tattoos, Accessoires
+- ⬜ Charakter-Editor: Körperformen, Frisuren, Tattoos, Accessoires (Datenmodell `Appearance` + Atlanten existieren bereits)
 - ⬜ Kleidung/Merch: Bandshirts (Print-Atlas für Instancing), Hoodies, Tanktops, Cargo, Baggy Jeans, Shorts, Schuhe, Caps/Beanies
 - ⬜ Weitere Venues (Jugendzentrum, Konzertsaal, Club) mit unterschiedlichem Pit/Crowd
 - ⬜ Highscore-Listen je Venue

@@ -91,8 +91,10 @@ nächsten passenden Puls. Liefert Events (`start`, `convert`, `end`, `bail`, `re
 
 ## Animationssystem
 
-- **Rig:** `CharacterRig` – Hierarchie aus Gruppen (Root → Body → Spine/Hüften → Nacken, Schultern, Ellbogen, Knie);
-  Körperteile sind Quader mit Pivot am Gelenk (15 Teile inkl. Mütze und Gitarre).
+- **Rig:** `CharacterRig` – Hierarchie aus Gruppen (Root → Body → Spine/Hüften → Nacken, Schultern, Ellbogen, Knie).
+  Körperteile (`characterParts.ts`, 28 Teile inkl. Varianten wie Cap/Beanie/Haare/Ärmel und Gitarre) sind
+  Low-Poly-Meshes mit Pivot am Gelenk. Aussehen ist reine Datenlage (`src/data/appearance.ts`), `resolveLook()`
+  übersetzt es in Sichtbarkeit, Farbe und Atlas-Zelle pro Teil.
 - **Posen/Clips:** `clips.ts` enthält handgebaute Keyframes (normierte Zeit 0..1, Easing pro Segment) für alle Moves,
   Fortbewegung, Crowd-Verhalten und Band. Sparse Specs werden auf eine Basispose gelegt und vorkompiliert.
 - **Wiederverwendung:** Spiegelung (`mirrorPose`) erzeugt Links/Rechts-Varianten; derselbe Clip läuft beim Spieler,
@@ -107,8 +109,10 @@ nächsten passenden Puls. Liefert Events (`start`, `convert`, `end`, `bail`, `re
 - `Renderer`: WebGLRenderer ohne AA → Render-Target ≈ 270 Zeilen (Breite nach Seitenverhältnis), Nearest-Filter →
   Post-Shader: sRGB, 4×4-Bayer-Dithering + Quantisierung auf 31 Stufen/Kanal, Blitz-Overlay, Vignette, Scanlines.
 - `ps1.ts`: `onBeforeCompile`-Patch für Lambert/Basic-Materialien → Vertex-Snapping auf das Low-Res-Pixelraster.
-- `CrowdRenderer`: **ein `InstancedMesh` pro Körperteil** für Crowd + Band (~15 Draw Calls total). Pro Agent wird die
-  Pose auf ein unsichtbares Scratch-Rig gelegt und die Teil-Matrizen kopiert; Farben per `instanceColor`.
+- `CrowdRenderer`: **ein `InstancedMesh` pro Körperteil** für Crowd + Band (28 Draw Calls total, unabhängig von der
+  Crowd-Größe). Pro Agent wird die Pose auf ein unsichtbares Scratch-Rig gelegt und die Teil-Matrizen kopiert;
+  Farbe per `instanceColor`, Textur-Atlas-Zelle per Instanz-Attribut `instanceAtlas` (Shader-Patch in `ps1.ts`).
+  Nicht getragene Varianten bekommen eine Null-Matrix. Der Spieler nutzt dieselben Teile mit Einzelmaterialien.
   Agenten auf der Sichtlinie Kamera→Spieler und direkt vor der Kamera werden ausgeblendet.
 - `VenueBuilder` (statische Geometrie aus `VenueDefinition`), `StageLights` (4 Punktlichter, Kegel, Rauch),
   `CameraController` (Orbit, Raum-/Decken-Clamping, Shake, FOV-Kick), `PlayerView`, `Particles`, `SceneView`.

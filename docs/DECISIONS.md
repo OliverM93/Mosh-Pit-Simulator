@@ -7,6 +7,16 @@ Format: **Datum · Entscheidung** – Begründung · Betroffene Systeme · Alter
 
 ---
 
+### D-022 · 2026-11-21 · Fighting-Game-Figuren statt Quader, Outfits als Atlas-Daten
+- **Begründung:** Owner-Feedback: Quaderfiguren wirken klobig; Referenz ist der PS1-Look von 3D-Fightern (Tekken 3)
+  und Fotos echter Hardcore-Bands. Glatt schattierte Low-Poly-Teile + Texturatlanten erreichen das ohne externe
+  Modelle, behalten das Instancing (ein Draw Call pro Teil) und legen das Datenmodell für Outfit-Unlocks (Phase 3).
+- **Betroffen:** `characterParts.ts`, `characterTextures.ts`, `CharacterRig`, `CrowdRenderer`, `PlayerView`,
+  `ps1.ts` (Atlas-Attribut), `src/data/appearance.ts`, `CrowdSim`.
+- **Alternativen:** Geskinnte glTF-Modelle aus Blender (beste Qualität, aber Asset-Pipeline nötig – bleibt für
+  Phase 2/3 geplant, siehe D-021); mehr Quader-Details (bleibt klobig).
+- **Hinweis:** Keine echten Logos (Bands, Sportteams, Marken) aus den Referenzfotos – nur Stil und Typen übernommen.
+
 ### D-021 · 2026-11-21 · Tech-Stack überprüft (Godot 4 + GDScript vs. TypeScript + Three.js) – vorerst beibehalten, Zielplattform offen
 - **Anlass:** Externe Empfehlung, auf Godot 4 + GDScript für ein Windows-PC-Spiel zu wechseln.
 - **Pro Godot:** vollwertiger Editor (Level, Licht, Partikel), komfortable Blender→glTF→AnimationTree-Pipeline,

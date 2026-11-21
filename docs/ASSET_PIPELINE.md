@@ -6,7 +6,8 @@ Phase 1 enthält **keine** importierten 3D-Modelle, Texturen, Audiodateien oder 
 
 | Asset-Art | Erzeugung | Ort |
 | --- | --- | --- |
-| Charaktere | Quader-Rig aus `BoxGeometry` | `src/render/CharacterRig.ts` |
+| Charaktere | Low-Poly-Teile aus Zylindern/Kugeln/Boxen | `src/render/characterParts.ts`, `CharacterRig.ts` |
+| Kleidung, Tattoos, Gesichter | Canvas-Atlanten mit 64-px-Zellen | `src/render/characterTextures.ts` |
 | Umgebung | Primitive aus `VenueDefinition` | `src/render/VenueBuilder.ts` |
 | Texturen | Canvas-2D, 16–64 px | `src/render/textures.ts` |
 | Animationen | Keyframe-Daten | `src/animation/clips.ts` |

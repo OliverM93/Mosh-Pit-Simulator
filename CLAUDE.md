@@ -31,7 +31,7 @@ npm run build        # Produktions-Build nach dist/
 
 ```
 src/core        Mathe, RNG, EventBus (keine Abhängigkeiten)
-src/data        Reine Daten: moves.ts, songs/, venues.ts, comboBonuses.ts
+src/data        Reine Daten: moves.ts, songs/, venues.ts, comboBonuses.ts, appearance.ts (Outfits/Looks)
 src/audio       SongTimeline (pur), SongClock, SongPlayer (Synth/File), instruments, Sfx, AudioEngine
 src/gameplay    Headless Logik: MoveSystem, MoveResolver, ComboSystem, HypeMeter, Player, crowd/CrowdSim, PitSession, modes
 src/animation   pose.ts (Pose-Format), clips.ts (Keyframes), Animator (Überblendung)
@@ -90,8 +90,8 @@ Nach jeder größeren Aufgabe:
 
 ## Aktueller Stand (2026-11-21)
 
-Phase 1 (Core Prototype) abgeschlossen: ein Venue, drei Synth-Songs, 11 Moves, Combo-/Hype-/Timing-System,
-Crowd, PS1-Renderer, HUD/Menüs, Arcade + Free Pit, Save-System, 43 Tests. Nächste Phase: Gameplay Polish
+Phase 1 (Core Prototype) abgeschlossen, Figuren-Look überarbeitet (D-022): ein Venue, drei Synth-Songs, 11 Moves, Combo-/Hype-/Timing-System,
+Crowd, PS1-Renderer, HUD/Menüs, Arcade + Free Pit, Save-System, 45 Tests. Nächste Phase: Gameplay Polish
 (Phase 2) – siehe `docs/ROADMAP.md` und `docs/SESSION_HANDOFF.md`.
 
 ## Wichtige Entscheidungen (Kurzfassung, Details in `docs/DECISIONS.md`)

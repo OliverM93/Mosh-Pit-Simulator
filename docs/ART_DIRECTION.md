@@ -19,17 +19,23 @@ Nicht umgesetzt (bewusst): affines Texture-Warping (in WebGL2/GLSL ES 3.0 nicht 
 
 ## Low-Poly-Anforderungen
 
-- Charaktere: 15 Quader (Becken, Torso, Kopf, Mütze, Ober-/Unterarme, Ober-/Unterschenkel, Füße, Gitarre).
-  ≈ 200 Dreiecke pro Figur. Neue Teile nur mit Gameplay- oder Lesbarkeits-Nutzen.
+- Charaktere im Stil später 90er-3D-Fighter (Referenz: Tekken 3 auf der PS1): **glatt schattierte** Low-Poly-Teile
+  statt Quader – verjüngte Gliedmaßen (8 Segmente), V-förmiger Torso mit Brust und abfallenden Schultern, Kugelkopf
+  mit schmalerem Kiefer und Hals, Fäuste, Sneaker mit dicker Sohle. Kleidung, Tattoos und Gesichter sind Textur,
+  nicht Geometrie. Varianten als eigene Teile: Haare (Buzz/kurz), Bart, Cap, Cap rückwärts, Beanie, kurze/lange
+  Ärmel. ≈ 1000–1500 Dreiecke pro Figur.
+- Neue Teile nur mit Gameplay- oder Lesbarkeits-Nutzen.
 - Umgebung: Quader, Ebenen, Zylinder mit 4–12 Segmenten. Keine Rundungen „für Schönheit“.
 - Silhouette vor Detail: Spieler und Moves müssen auf 270p lesbar sein.
 
 ## Texturen
 
-- 16–64 px, Nearest-Filter, keine Mipmaps, prozedural per Canvas (`textures.ts`): Beton, Ziegel, Holzbühne,
-  Amp-Bespannung, Flyer, Gesichter, Shirt-Prints, Rauch, Lichtkegel-Verlauf.
-- Kleidung der Crowd: helle Schmutz-Textur, eingefärbt per Instanzfarbe.
-- Gesichter: 16×16-Pixel, wütend-fröhlicher Shout-Ausdruck; nur die Vorderseite des Kopfes trägt das Gesicht.
+- 16–64 px, Nearest-Filter, keine Mipmaps, prozedural per Canvas: Umgebung in `textures.ts` (Beton, Ziegel,
+  Holzbühne, Amp-Bespannung, Flyer, Rauch, Lichtkegel), Figuren in `characterTextures.ts`.
+- Figuren nutzen **Atlanten** mit 64-px-Zellen: Shirts/Jacken (fiktive Prints, Jersey, Flanell, Varsity, Camo-Puffer,
+  Hoodie), Hosen (Jeans blau/schwarz, Woodland-Camo, Cargo, Track Pants, Chinos, Jogger), Arm-Tattoos, Gesichter
+  (Ausdrücke, Sonnenbrille, Hals-Tattoos), Caps. Jede Crowd-Person wählt pro Teil eine Zelle + Farbe.
+- Die Vorderseite eines Teils liegt in der Zellenmitte (u = 0,5); Prints sitzen dort.
 - Text auf Texturen (Banner, Flyer) bewusst pixelig.
 
 ## Beleuchtung
@@ -45,11 +51,14 @@ Nicht umgesetzt (bewusst): affines Texture-Warping (in WebGL2/GLSL ES 3.0 nicht 
 ## Charakterdesign
 
 - Proportionen leicht überzeichnet (großer Kopf, breite Schultern), Größe ±8 % und Statur −10 … +20 % pro NPC.
-- Hardcore-Dresscode: überwiegend schwarze Shirts, einige weiße/graue/Bandfarben; Jeans, Cargo, Shorts; weiße
-  Sneaker oder schwarze Boots; ~30 % Caps/Beanies.
-- Spieler: weißes „MOSH“-Shirt mit rotem Print, olive Cargo-Shorts, rote Cap, weiße Schuhe, leichte Eigenleuchtkraft
-  → sticht aus der schwarzen Crowd heraus.
-- Band: Sänger in Weiß mit Mikro-Pose, Gitarristen mit Quader-Gitarren, Drummer sitzend mit roter Cap.
+- Hardcore-Dresscode nach Referenzfotos echter Bands (vom Owner bereitgestellt): überwiegend schwarze Print-Shirts,
+  Caps mit flachem Schirm (auch rückwärts), Beanies, Bärte, Glatzen, Tattoo-Sleeves und Hals-Tattoos,
+  Baseball-Jerseys, Flanell, Varsity- und Puffer-Jacken, Camo- und Jeanshosen, weiße Sneaker.
+  Gewichtung in `randomAppearance()` (`src/data/appearance.ts`). **Keine echten Band-, Team- oder Markenlogos** –
+  alle Prints sind fiktiv.
+- Spieler: weißes „MOSH PIT“-Shirt mit rotem Print, Camo-Hose, rote Cap rückwärts, Bart, Tattoo-Sleeves, leichte
+  Eigenleuchtkraft → sticht aus der schwarzen Crowd heraus.
+- Band: Sänger mit Glatze, Bart und Hoodie, Gitarristen mit Box-Gitarren, Drummer sitzend mit Cap rückwärts.
 - Animationen: überzeichnet, schnappend (Ease-In/Out, Overshoot), immer musiksynchron.
 
 ## Umgebungen

@@ -5,6 +5,16 @@ Versionierung nach [SemVer](https://semver.org/lang/de/) (vor 1.0 kann sich alle
 
 ## [Unreleased]
 
+### Geändert
+
+- Charaktere komplett neu: glatt schattierte Low-Poly-Körper (verjüngte Gliedmaßen, geformter Torso, Kopf mit Kiefer
+  und Hals, Fäuste, Sneaker) statt Quader; Varianten für Haare, Bart, Cap (vorwärts/rückwärts), Beanie, kurze/lange
+  Ärmel.
+- Crowd-Outfits aus einem Aussehens-Katalog (`src/data/appearance.ts`): fiktive Band-Shirts, Jersey, Flanell,
+  Hoodie, Varsity- und Puffer-Jacke, Jeans/Camo/Cargo/Track Pants, Tattoo-Sleeves, Gesichter mit Sonnenbrille oder
+  Hals-Tattoos. Per-Instanz-Texturatlas, weiterhin ein Draw Call pro Körperteil.
+- Neuer Spieler-Look (MOSH-PIT-Shirt, Camo, rote Cap rückwärts); Band mit eigenen Outfits.
+
 ## [0.1.0] – 2026-11-21 – Phase 1: Core Prototype
 
 ### Hinzugefügt

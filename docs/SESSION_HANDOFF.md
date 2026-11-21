@@ -9,6 +9,8 @@ Kurz und praktisch. Nach jeder größeren Aufgabe aktualisieren (älteren Stand 
 
 ## Zuletzt erledigt
 
+- Figuren-Overhaul (D-022): Low-Poly-Fighter-Look, Outfit-Katalog, Atlanten; README-Screenshot erneuert.
+
 - Repo eingerichtet: Vite/TS/Vitest/Three.js, CI (`.github/workflows/ci.yml`), PR-Template, komplette Doku.
 - Phase-1-Prototyp spielbar: Basement-Venue, 3 Synth-Songs, 11 Moves, Combo/Hype/Timing, Crowd, PS1-Renderer,
   HUD/Menüs/Ergebnis, Arcade + Free Pit, Save-System.

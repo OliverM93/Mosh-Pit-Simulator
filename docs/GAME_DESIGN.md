@@ -95,6 +95,8 @@ kostet 30 %. Voll → **PIT FRENZY**: 10 s doppelte Punkte, Crowd springt, Strob
 | Band | Sänger, 2 Gitarren, Drummer, animiert je nach Sektion | ✅ |
 | Stage-Diver | Springt von der Bühne in die Crowd | 📋 Phase 2 |
 
+- **Aussehen:** Jede Person wird aus einem Katalog zusammengesetzt (Shirt/Jacke, Hose, Kopfbedeckung, Haare, Bart,
+  Tattoos, Gesicht, Hautton, Größe, Statur) – Grundlage für Charakter-/Outfit-Unlocks in Phase 3.
 - **Dynamische Dichte:** Der Pit-Radius „atmet“: Breakdown ×1,3, Heavy ×1,4, plus Hype.
 - **Reaktionen:** Jubelwelle (Verzögerung nach Entfernung) bei großen Combos und Frenzy, „Ohh“ bei Bails,
   Schubsen bei Kontakt, Stolpern bei Treffern.
