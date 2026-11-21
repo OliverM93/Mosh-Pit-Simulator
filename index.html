@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="MOSH PIT – Hardcore Arcade Simulator" />
+    <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
+    <title>MOSH PIT – Hardcore Arcade Simulator</title>
+  </head>
+  <body>
+    <div id="app">
+      <div id="viewport"></div>
+      <div id="hud" class="hidden">
+        <div class="hud-tl">
+          <div class="label">SCORE</div>
+          <div id="hud-score" class="big-num">0</div>
+          <div id="hud-hi" class="small">HI 0</div>
+          <div class="hype">
+            <div class="label">HYPE</div>
+            <div class="hype-bar"><div id="hud-hype"></div></div>
+          </div>
+        </div>
+        <div class="hud-tr">
+          <div id="hud-song"></div>
+          <div id="hud-band" class="small"></div>
+          <div id="hud-time" class="big-num"></div>
+          <div id="hud-section" class="tag"></div>
+        </div>
+        <div id="hud-banner"></div>
+        <div id="hud-rating"></div>
+        <div id="hud-popups"></div>
+        <div class="hud-bottom">
+          <div id="hud-combo-moves"></div>
+          <div id="hud-combo-score"></div>
+          <div id="hud-chain"><div></div></div>
+          <div id="beat-bar">
+            <div class="beat-target"></div>
+          </div>
+          <div id="hud-hint" class="small"></div>
+        </div>
+        <div id="hud-movelist"></div>
+      </div>
+      <div id="screens"></div>
+      <div id="crt"></div>
+    </div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
