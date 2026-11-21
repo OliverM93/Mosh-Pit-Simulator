@@ -7,6 +7,18 @@ Format: **Datum · Entscheidung** – Begründung · Betroffene Systeme · Alter
 
 ---
 
+### D-023 · 2026-11-21 · Echte Bandnamen auf Merch und Flyern
+- **Entscheidung (Owner):** Shirts und Wand-Flyer zeigen Namen echter Bands statt fiktiver (Hatebreed, Madball,
+  Knocked Loose, Turnstile, Terror, Sick Of It All; Flyer: Agnostic Front, Cro-Mags, Biohazard, Comeback Kid,
+  Kublai Khan, Terror).
+- **Umsetzung:** Nur Namen als Text in eigener Typografie, keine Original-Logos. Zentral in `MERCH_BANDS`
+  (`src/data/appearance.ts`) und `look.posters` (`src/data/venues.ts`) – mit einer Änderung austauschbar.
+- **Grenze:** Songs und die Band auf der Bühne bleiben fiktiv, solange die Musik synthetisiert ist – sonst würden
+  erfundene Songs echten Bands zugeschrieben. Mit lizenzierten Aufnahmen kommen die echten Namen dazu.
+- **Risiko:** Bandnamen sind Marken. Für einen privaten Prototyp unkritisch; vor kommerzieller Veröffentlichung
+  Erlaubnis einholen oder Liste ersetzen.
+- **Ersetzt:** den Teil von D-022, der alle Prints fiktiv vorsah.
+
 ### D-022 · 2026-11-21 · Fighting-Game-Figuren statt Quader, Outfits als Atlas-Daten
 - **Begründung:** Owner-Feedback: Quaderfiguren wirken klobig; Referenz ist der PS1-Look von 3D-Fightern (Tekken 3)
   und Fotos echter Hardcore-Bands. Glatt schattierte Low-Poly-Teile + Texturatlanten erreichen das ohne externe

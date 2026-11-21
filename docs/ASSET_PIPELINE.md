@@ -58,7 +58,9 @@ Regeln:
 2. Erlaubt: selbst erstellte Inhalte, CC0, CC-BY (mit Namensnennung), explizit lizenzierte Musik von Bands mit
    schriftlicher Erlaubnis.
 3. Jede externe Datei wird **vor dem Commit** unten eingetragen. Lizenztexte, falls verlangt, nach `licenses/`.
-4. Keine Namen, Logos oder Designs realer Bands, Marken oder anderer Spiele ohne Erlaubnis.
+4. Keine Logos oder Designs realer Bands, Marken oder anderer Spiele ohne Erlaubnis. **Ausnahme (D-023):** echte
+   Bandnamen als Text auf Merch und Flyern, gepflegt in `MERCH_BANDS` und `look.posters` – vor einer
+   kommerziellen Veröffentlichung Erlaubnis der Bands einholen oder die Liste ersetzen.
 5. Große Binärdateien (> 5 MB) erst nach Entscheidung über Git LFS (offener Punkt in `ROADMAP.md`).
 
 ### Asset-Register

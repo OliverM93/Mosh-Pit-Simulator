@@ -106,4 +106,5 @@ docs/          Design- und Technik-Dokumentation
 
 Noch keine Lizenz festgelegt – bis dahin gilt: alle Rechte vorbehalten.
 Alle Musikstücke, Sounds und Texturen werden zur Laufzeit prozedural erzeugt; es sind keine Fremd-Assets
-enthalten. Bands, Songs und Venues sind fiktiv. Einzige Laufzeit-Abhängigkeit: [three.js](https://threejs.org) (MIT).
+enthalten. Songs, spielende Bands und Venues sind fiktiv. Auf Shirts und Flyern im Publikum stehen Namen echter
+Hardcore-Bands als Text (keine Original-Logos); für eine kommerzielle Veröffentlichung wäre deren Erlaubnis nötig. Einzige Laufzeit-Abhängigkeit: [three.js](https://threejs.org) (MIT).

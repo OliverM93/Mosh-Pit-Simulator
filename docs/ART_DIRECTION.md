@@ -54,8 +54,10 @@ Nicht umgesetzt (bewusst): affines Texture-Warping (in WebGL2/GLSL ES 3.0 nicht 
 - Hardcore-Dresscode nach Referenzfotos echter Bands (vom Owner bereitgestellt): überwiegend schwarze Print-Shirts,
   Caps mit flachem Schirm (auch rückwärts), Beanies, Bärte, Glatzen, Tattoo-Sleeves und Hals-Tattoos,
   Baseball-Jerseys, Flanell, Varsity- und Puffer-Jacken, Camo- und Jeanshosen, weiße Sneaker.
-  Gewichtung in `randomAppearance()` (`src/data/appearance.ts`). **Keine echten Band-, Team- oder Markenlogos** –
-  alle Prints sind fiktiv.
+  Gewichtung in `randomAppearance()` (`src/data/appearance.ts`).
+- **Merch und Flyer zeigen echte Bandnamen** (Owner-Entscheidung, D-023) – als reiner Text in eigener Typografie,
+  zentral in `MERCH_BANDS` (`src/data/appearance.ts`) bzw. `look.posters` der Venue. **Keine Original-Logos**
+  (z. B. kein Hatebreed-Flammenschriftzug) und keine Team-/Markenlogos (Yankees o. Ä.).
 - Spieler: weißes „MOSH PIT“-Shirt mit rotem Print, Camo-Hose, rote Cap rückwärts, Bart, Tattoo-Sleeves, leichte
   Eigenleuchtkraft → sticht aus der schwarzen Crowd heraus.
 - Band: Sänger mit Glatze, Bart und Hoodie, Gitarristen mit Box-Gitarren, Drummer sitzend mit Cap rückwärts.
@@ -87,4 +89,5 @@ Regel: Der Pit bleibt immer der hellste, übersichtlichste Bereich. Deko gehört
 - Flyer-Ästhetik von DIY-Hardcore-Shows: Kopierer-Kontrast, handgeschriebene Typo, „ALL AGES“.
 - Echte Kellerkonzerte: rote Bühnenlampen, eine Glühbirne, Kondenswasser, Leute auf der Bühnenkante.
 
-Keine Figuren, Logos, Bandnamen, Levels oder Assets realer Spiele oder Bands verwenden.
+Keine Figuren, Levels oder Assets realer Spiele und keine Original-Logos realer Bands verwenden. Echte Bandnamen
+nur als Text auf Merch/Flyern (D-023); Songs werden keiner echten Band zugeschrieben, solange sie synthetisiert sind.

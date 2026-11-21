@@ -53,6 +53,10 @@ automatisch „BREAKDOWN II“.
 
 ## Aktuelle Songs (alle synthetisiert, Bands fiktiv)
 
+Die *spielenden* Bands bleiben fiktiv: Synthetisierte Songs einer echten Band zuzuschreiben, wäre eine falsche
+Zuordnung. Echte Bandnamen kommen mit echten, lizenzierten Aufnahmen (`FileSongPlayer`). Auf Shirts und Flyern
+stehen bereits echte Bandnamen (D-023).
+
 | Song | Band | Genre | BPM | Länge | Besonderheit |
 | --- | --- | --- | --- | --- | --- |
 | Basement Rules | Concrete Halo | Hardcore | 165 | 1:45 | 2 Breakdowns + Heavy Part |

@@ -14,6 +14,8 @@ Versionierung nach [SemVer](https://semver.org/lang/de/) (vor 1.0 kann sich alle
   Hoodie, Varsity- und Puffer-Jacke, Jeans/Camo/Cargo/Track Pants, Tattoo-Sleeves, Gesichter mit Sonnenbrille oder
   Hals-Tattoos. Per-Instanz-Texturatlas, weiterhin ein Draw Call pro Körperteil.
 - Neuer Spieler-Look (MOSH-PIT-Shirt, Camo, rote Cap rückwärts); Band mit eigenen Outfits.
+- Shirts und Flyer tragen Namen echter Hardcore-Bands (Text, keine Logos; D-023). Shirt-Atlanten in doppelter
+  Auflösung, Brust-Prints planar projiziert und lesbar.
 
 ## [0.1.0] – 2026-11-21 – Phase 1: Core Prototype
 

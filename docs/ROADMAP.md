@@ -70,6 +70,7 @@ Priorität nach Spielgefühl:
 
 - ⬜ **Zielplattform festlegen** (Browser vs. eigenständiges Windows-/Steam-Spiel) – entscheidet über einen
   Engine-Wechsel zu Godot 4 vor Phase 2 (siehe `DECISIONS.md` D-021)
+- ⬜ Vor einer Veröffentlichung: Erlaubnis für echte Bandnamen auf Merch/Flyern klären (D-023)
 - ⬜ Lizenz festlegen (Entscheidung des Owners; bis dahin keine LICENSE-Datei)
 - ⬜ Branch Protection für `main` einrichten (siehe SESSION_HANDOFF – nur durch den Owner möglich)
 - ⬜ Git LFS ja/nein, sobald große Binär-Assets kommen
