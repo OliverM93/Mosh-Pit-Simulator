@@ -29,6 +29,8 @@ Priorität nach Spielgefühl:
 2. ⬜ Audio-Kalibrierungsscreen (im Takt tippen → Offset automatisch bestimmen)
 3. ⬜ Weitere Moves: z. B. Haymaker/Windmill-Varianten, Stage Dive (von der Bühnenkante), Floorpunch, Two-Step-Varianten
 4. ⬜ Bessere Übergänge: Lauf→Move-Einstiege, Landungen mit Federung, Variation in Idle
+4a. ⬜ Geskinnte glTF-Charaktere mit in Blender erstellten Animationen (Spinkick, Butterfly Kick, Cartwheel zuerst),
+    abspielen über Three.js `AnimationMixer`; Box-Rig bleibt als Fallback/Crowd-LOD (D-021)
 5. ⬜ Stärkere Crowd-Reaktionen: Stage-Diver-NPC, Circle-Pit-Phasen, Crowd-Surfer, die man „abfangen“ kann
 6. ⬜ Mehr SFX-Varianten, Crowd-Gesänge bei Breakdowns, Ansager zwischen Songs
 7. ⬜ Kamera: Zoom-out bei großen Combos, optionale Auto-Kamera, Kollision mit Decke weicher
@@ -63,6 +65,8 @@ Priorität nach Spielgefühl:
 
 ## Offene Aufgaben (projektweit)
 
+- ⬜ **Zielplattform festlegen** (Browser vs. eigenständiges Windows-/Steam-Spiel) – entscheidet über einen
+  Engine-Wechsel zu Godot 4 vor Phase 2 (siehe `DECISIONS.md` D-021)
 - ⬜ Lizenz festlegen (Entscheidung des Owners; bis dahin keine LICENSE-Datei)
 - ⬜ Branch Protection für `main` einrichten (siehe SESSION_HANDOFF – nur durch den Owner möglich)
 - ⬜ Git LFS ja/nein, sobald große Binär-Assets kommen
@@ -80,6 +84,7 @@ Priorität nach Spielgefühl:
 
 ## Nächste konkrete Schritte
 
-1. PR „Phase 1“ reviewen und mergen (Owner).
-2. Lokal anspielen (`npm run dev`), Eindrücke zu Timing, Bail-Härte und Kamera sammeln.
-3. Phase 2 starten mit: Kalibrierungsscreen + Tuning-Runde (Timing-Fenster, Chain-Window, Bail-Dauer).
+1. Zielplattform entscheiden (D-021) – davon hängt ab, ob Phase 2 in TS/Three.js oder Godot 4 stattfindet.
+2. PR „Phase 1“ reviewen und mergen (Owner).
+3. Lokal anspielen (`npm run dev`), Eindrücke zu Timing, Bail-Härte und Kamera sammeln.
+4. Phase 2 starten mit: Kalibrierungsscreen + Tuning-Runde (Timing-Fenster, Chain-Window, Bail-Dauer).

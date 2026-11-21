@@ -31,6 +31,8 @@ Kurz und praktisch. Nach jeder größeren Aufgabe aktualisieren (älteren Stand 
 
 ## Nächster empfohlener Schritt
 
+0. **Offene Grundsatzfrage:** Zielplattform Browser oder Windows-Standalone? Bei Windows/Steam + Editor-Arbeit →
+   Wechsel zu Godot 4 vor Phase 2 (Bewertung in `docs/DECISIONS.md` D-021). Nicht ohne Freigabe des Owners wechseln.
 1. Owner spielt lokal an (`npm install && npm run dev`) und merged den PR.
 2. Neuer Branch `feature/timing-calibration`: Kalibrierungsscreen + Tuning-Runde (siehe Roadmap Phase 2, Punkte 1–2).
 

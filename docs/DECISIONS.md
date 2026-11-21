@@ -7,6 +7,25 @@ Format: **Datum · Entscheidung** – Begründung · Betroffene Systeme · Alter
 
 ---
 
+### D-021 · 2026-11-21 · Tech-Stack überprüft (Godot 4 + GDScript vs. TypeScript + Three.js) – vorerst beibehalten, Zielplattform offen
+- **Anlass:** Externe Empfehlung, auf Godot 4 + GDScript für ein Windows-PC-Spiel zu wechseln.
+- **Pro Godot:** vollwertiger Editor (Level, Licht, Partikel), komfortable Blender→glTF→AnimationTree-Pipeline,
+  native Windows-Exporte (Steam), mehr Performance-Reserve, weniger Eigenbau bei Effekten.
+- **Pro TypeScript + Three.js:** Phase 1 läuft und beweist den Core Loop. Musik-Timing ist der Kern des Spiels:
+  Web Audio plant Noten sample-genau, Tastendrücke tragen Event-Zeitstempel (im Browser auf < 0,5 ms verifiziert).
+  In Godot 4 tragen `InputEvent`s keine Zeitstempel; Eingaben sind an die Framerate gebunden (bei 60 FPS bis ~17 ms
+  Quantisierung – innerhalb des Perfect-Fensters von ±51 ms verkraftbar, aber ein Nachteil). Browser = Playtests per
+  Link. Alles textbasiert und headless prüfbar (Tests, CI in Sekunden, Screenshots) – passt zur Entwicklung mit Claude Code.
+- **Neutral:** Kollisionen (Arcade-Kinematik, keine Physik-Engine nötig), Gamepad, Spielstand – bereits gelöst und
+  klein. Skelett-Animationen aus Blender (glTF) funktionieren in beiden Stacks (Three.js: `AnimationMixer` mit Crossfades).
+- **Entscheidung:** Stack bleibt, bis die Zielplattform feststeht. Ist ein eigenständiges Windows-/Steam-Spiel mit
+  Editor-Arbeit des Owners das Ziel → Wechsel zu Godot 4 **vor Phase 2** (günstigster Zeitpunkt: Design, Daten,
+  Tuning-Werte und Doku sind übertragbar, der Code nicht).
+- **Unabhängig davon übernommen:** Animationsqualität ist das größte Risiko der Box-Rig-Lösung → geskinnte
+  glTF-Charaktere mit Blender-Animationen einplanen (Roadmap Phase 2).
+- **Alternativen:** Unity + C# (mehr Overhead), Unreal/C++ (überdimensioniert), Python/Panda3D, reines C++ (zu viel Eigenbau).
+- **Betroffen:** gesamte Codebasis, CI, Asset-Pipeline.
+
 ### D-020 · 2026-11-21 · Leerer Initial-Commit auf `main` als PR-Basis
 - **Begründung:** Das Repo war komplett leer; ohne `main` ist kein PR möglich, und der zuerst gepushte Branch wird
   Default-Branch. Vom Owner freigegeben.
