@@ -1,5 +1,8 @@
 # Art Direction
 
+> **Stand D-025/D-027:** Figuren sind jetzt geskinnte Blender-Modelle (MakeHuman-Körper, gebackene + gemalte
+> Texturen, Mocap). Die Abschnitte zu Atlas-Figuren unten beschreiben den Fallback (`CrowdRenderer`).
+
 **Leitbild:** Ein PS1/PS2-Spiel, das man 2001 aus der Videothek geliehen hätte – dunkel, laut, schwitzig, ein
 bisschen albern. Rendering-Artefakte der Ära (wackelnde Vertices, Dithering, grobe Texturen, Nebel) sind Stilmittel,
 keine Fehler. Fotorealismus ist ausdrücklich kein Ziel.

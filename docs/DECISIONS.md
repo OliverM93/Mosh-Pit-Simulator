@@ -7,6 +7,20 @@ Format: **Datum · Entscheidung** – Begründung · Betroffene Systeme · Alter
 
 ---
 
+### D-027 · 2026-11-21 · Geskinnte Figuren im Spiel: ein Charakter pro NPC statt Instancing
+- **Anlass:** Einbau der Blender-Figuren (D-025) in Spieler, Crowd und Band.
+- **Entscheidung:** Jeder NPC ist ein eigener `SkinnedMesh`-Klon (`SkeletonUtils.clone`) einer von 8 Crowd-Varianten;
+  Geometrie, Materialien und Clips werden geteilt. Wiedergabe *phasengesteuert*: das Gameplay liefert Clip + Fortschritt,
+  der `AnimationMixer` macht nur die Überblendungen. Das revidiert Architekturprinzip 7 (CLAUDE.md) für Figuren:
+  ≈ 5 Draw Calls pro sichtbarer Figur (Körper, Augen, Shirt, Hose, Schuhe, ggf. Kopfbedeckung).
+- **Budget:** Verdeckte Körperflächen unter der Kleidung werden beim Bauen gelöscht (≈ 20–25 % der Körperdreiecke),
+  Crowd-LOD 0,4 (Körper) / 0,5 (Schuhe), 512er-Texturen. Gemessen: ≈ 1,0 Mio. Dreiecke und ≈ 460 Draw Calls pro
+  Frame bei 64 Figuren (vorher 1,4 Mio.). Crowd wirft keine Schatten, nur der Spieler.
+- **Fallback:** Lädt `public/models/` nicht, nutzt das Spiel die alten Instanced-Figuren (`CrowdRenderer`).
+- **Alternativen:** Skinned Instancing mit Animations-Textur (VAT/Bone-Texture – deutlich komplexer, erst bei
+  Performance-Problemen auf echter Hardware), Meshes pro Variante zusammenführen (spart Draw Calls, braucht
+  Textur-Atlas pro Figur – nächster Optimierungsschritt).
+
 ### D-026 · 2026-11-21 · Groove-Modell statt Taktdrücken (Variante A)
 - **Anlass:** Owner-Playtest: Taktdrücken viel zu schnell; echte Songs haben Tempowechsel.
 - **Entscheidung (Owner, Variante A):** Moves laufen in natürlicher Länge (passend zu Mocap-Animationen), Timing

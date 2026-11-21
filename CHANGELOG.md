@@ -10,6 +10,19 @@ Versionierung nach [SemVer](https://semver.org/lang/de/) (vor 1.0 kann sich alle
 - Groove-Modell (D-026): Moves in natürlicher Länge, Timing nur noch Bonus, kein Sturz bei Off-Beat; Crash, wenn ein
   großer Move ins Gedränge geht. Combo-Fenster 0,8 s. HUD zeigt „ON BEAT!“ statt „MISS“; Note nach On-Beat-Anteil.
 
+### Hinzugefügt (Grafik)
+
+- Spieler, Publikum und Band sind jetzt echte geskinnte 3D-Figuren aus Blender (D-025/D-027): Spieler + 8
+  Publikums-Varianten (Körperbau, Hautton, Bart, Kopfbedeckung, Flanell/Nadelstreifen/Band-Shirts, Camo/Jeans/
+  Shorts/Trainingshose), 36 Animationen aus Motion Capture und umgerechneten Keyframe-Clips mit weichen Überblendungen;
+  Schatten unter dem Pit (PS2/HD).
+
+### Behoben
+
+- Mocap-Retargeting: verdrehter Oberkörper (CMU-Gelenke ohne Länge, z. B. `Spine1 → Neck`), Blickrichtung um den
+  doppelten Winkel gedreht (Vorzeichenfehler), Gliedmaßen im Boden (Bodenkorrektur pro Frame), Bail-Clip als
+  Sprung statt Sturz.
+
 ### Hinzugefügt (in Arbeit)
 
 - Blender-Pipeline (headless) für echte Figuren aus MakeHuman (CC0) mit CMU-Motion-Capture; Prototyp-Modell und

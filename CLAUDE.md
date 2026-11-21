@@ -57,7 +57,8 @@ docs/           Dokumentation (deutsch)
 5. **Tuning-Werte gebündelt:** `SCORING` (ComboSystem), `MOVE_TUNING`, `SESSION_TUNING`, `PLAYER_TUNING`,
    `CROWD_TUNING`, `HYPE_TUNING`, `TIMING_WINDOWS`. Keine Magic Numbers verstreut einbauen.
 6. **Keine Fremd-Assets ohne geklärte Lizenz.** Texturen/Musik/SFX sind prozedural (siehe `docs/ASSET_PIPELINE.md`).
-7. **Performance:** Crowd = ein `InstancedMesh` pro Körperteil. Neue Crowd-Features dürfen keine Draw-Calls pro NPC erzeugen.
+7. **Performance:** Figuren sind geskinnte Blender-Modelle (D-025/D-027) mit geteilter Geometrie/Clips; neue
+   Crowd-Features dürfen keine *zusätzlichen* Draw-Calls pro NPC erzeugen. Dreiecksbudget im Blick behalten (≈ 1 Mio./Frame).
 8. Keine unnötige Komplexität: jedes Feature braucht einen erkennbaren Gameplay-Nutzen.
 
 ## Coding-Konventionen
@@ -91,9 +92,9 @@ Nach jeder größeren Aufgabe:
 
 ## Aktueller Stand (2026-11-21)
 
-Phase 1 (Core Prototype) abgeschlossen, Figuren-Look überarbeitet (D-022): ein Venue, drei Synth-Songs, 11 Moves, Combo-/Hype-/Timing-System,
-Crowd, PS1-Renderer, HUD/Menüs, Arcade + Free Pit, Save-System, 45 Tests. Nächste Phase: Gameplay Polish
-(Phase 2) – siehe `docs/ROADMAP.md` und `docs/SESSION_HANDOFF.md`.
+Phase 1 abgeschlossen; Phase 2 (Gameplay Polish) läuft: Groove-Modell (D-026), echte geskinnte Blender-Figuren mit
+Motion Capture für Spieler/Crowd/Band (D-025/D-027, `tools/blender/`, `public/models/`), Grafikstufen PS1/PS2/HD.
+Ein Venue, drei Synth-Songs (Originalmusik folgt), 11 Moves, 56 Tests. Siehe `docs/ROADMAP.md` und `docs/SESSION_HANDOFF.md`.
 
 ## Wichtige Entscheidungen (Kurzfassung, Details in `docs/DECISIONS.md`)
 

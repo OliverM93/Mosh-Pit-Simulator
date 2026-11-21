@@ -1,10 +1,18 @@
 # Asset-Pipeline
 
-## Figuren-Pipeline (Blender, im Aufbau)
+## Figuren-Pipeline (Blender)
 
 Echte Figuren entstehen per Skript in Blender (headless) aus MakeHuman (CC0) + CMU-Mocap, siehe
-`tools/blender/README.md` und D-025. Ausgabe: `public/models/*.glb` (glTF 2.0, Skelett mit 38 Knochen, Animationen
-als Clips). Prüfen im Browser: `viewer.html`.
+`tools/blender/README.md`, D-025 und D-027. Ausgabe in `public/models/`:
+
+| Datei | Inhalt |
+| --- | --- |
+| `anims.glb` | Skelett (38 Knochen) + alle 36 Clips, von allen Figuren geteilt |
+| `char_player.glb` | Spieler (1024er-Texturen, volle Auflösung) |
+| `char_c1.glb` … `char_c8.glb` | Publikum/Band (512er-Texturen, Körper-LOD 0,4) |
+
+Varianten sind Daten in `tools/blender/variants.py`, Clips in `CLIPS`/`KEY_CLIPS` (`build_characters.py`).
+Prüfen im Browser: `viewer.html?model=player&clip=spinkick`.
 
 ## Bisheriger Stand: prozedurale Inhalte
 

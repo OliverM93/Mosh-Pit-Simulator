@@ -2,19 +2,23 @@
 
 Kurz und praktisch. Nach jeder größeren Aufgabe aktualisieren (älteren Stand überschreiben, nicht anhängen).
 
-## Stand: 2026-11-21 – Phase 1 abgeschlossen
+## Stand: 2026-11-21 – Phase 2: echte Figuren im Spiel
 
 **Branch:** `claude/laughing-bell-msxkz3` (Setup + Phase 1) → PR gegen `main` (wartet auf Freigabe des Owners).
 `main` enthält nur den leeren Initial-Commit.
 
 ## Zuletzt erledigt
 
+- **Geskinnte Blender-Figuren im Spiel (D-027):** Spieler, Crowd und Band nutzen `public/models/*.glb`
+  (`src/render/characters.ts`, `SkinnedCrowdRenderer.ts`, `PlayerView`). Retargeting-Fehler behoben (Oberkörper,
+  Blickrichtung, Boden, Bail-Clip), verdeckte Körperflächen entfernt, Crowd-LOD → ≈ 1,0 Mio. Dreiecke/Frame.
+- **Groove-Modell (D-026):** Moves in natürlicher Länge, Timing nur Bonus, Crash statt Miss-Bail.
+
 - **Owner-Feedback nach dem Anspielen:** Synth-Musik schlecht (Originalmusik folgt), Takt-Drücken viel zu schnell,
   echte Songs haben Tempowechsel → Rhythmus-Mechanik wird überdacht (Entscheidung offen). Grafik/Animationen
   müssen deutlich besser und flüssiger werden.
 - Texturen + Gesichter für die Blender-Figur (`tools/blender/textures.py`), saubere Kleidungsschnitte.
-- **Figuren-Pipeline in Blender (D-025):** `tools/blender/` baut aus MakeHuman (CC0) + CMU-Mocap eine geskinnte
-  Figur mit Spinkick/Cartwheel → `public/models/proto.glb`, Ansicht: `viewer.html`. Noch nicht im Spiel.
+- **Figuren-Pipeline in Blender (D-025):** `tools/blender/` baut aus MakeHuman (CC0) + CMU-Mocap alle Figuren.
 - Eigene Songs (`public/user-content/songs.json`, Auto-BPM) – Code/Tests fertig, Browser-Test + Doku offen.
 
 - Grafikstufen PS1/PS2/HD (D-024), echte Bandnamen auf Merch/Flyern (D-023).
@@ -29,7 +33,10 @@ Kurz und praktisch. Nach jeder größeren Aufgabe aktualisieren (älteren Stand 
 
 ## Offene Probleme
 
-- Nicht auf echter GPU/mit echtem Gamepad getestet (nur headless).
+- Nicht auf echter GPU/mit echtem Gamepad getestet (nur headless). **Wichtig:** FPS mit den neuen Figuren auf echter
+  Hardware prüfen (SwiftShader: 1–2 FPS, aussagelos). Bei Problemen: Meshes pro Variante zusammenführen (D-027).
+- Nach dem Bail springt die Figur aus dem Liegen in den Stand (kein Aufsteh-Clip).
+- Eigene Merch-Logos (`user-content`) erscheinen nicht auf den neuen Figuren; Tempowechsel (BPM pro Abschnitt) offen.
 - Bail-Härte, Timing-Fenster und Chain-Window sind ungetestete Erstwerte → Playtest nötig.
 - Siehe „Bekannte Probleme“ in `docs/ROADMAP.md`.
 
@@ -42,6 +49,9 @@ Kurz und praktisch. Nach jeder größeren Aufgabe aktualisieren (älteren Stand 
 - Lizenz: bewusst offen (Owner-Entscheidung).
 
 ## Nächster empfohlener Schritt
+
+**Aktuell:** Owner spielt mit den neuen Figuren an (`git pull`, `npm install`, `npm run dev`) und meldet FPS + Eindruck.
+Danach: Aufsteh-Clip nach Bail, Tempowechsel in Songs, eigene Songs im Browser testen.
 
 0. **Offene Grundsatzfrage:** Zielplattform Browser oder Windows-Standalone? Bei Windows/Steam + Editor-Arbeit →
    Wechsel zu Godot 4 vor Phase 2 (Bewertung in `docs/DECISIONS.md` D-021). Nicht ohne Freigabe des Owners wechseln.

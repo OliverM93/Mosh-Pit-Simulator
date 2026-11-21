@@ -112,11 +112,19 @@ nächsten passenden Puls. Liefert Events (`start`, `convert`, `end`, `bail`, `re
   Snapping, Farbstufen, Dithering, Scanlines live; das Figuren-Detail (Segmentzahl, `partGeometries(detail)`, pro
   Stufe gecacht) greift beim nächsten Szenenaufbau (nächster Song bzw. sofort im Menü-Hintergrund).
 - `ps1.ts`: `onBeforeCompile`-Patch für Lambert/Basic-Materialien → Vertex-Snapping auf das Low-Res-Pixelraster.
-- `CrowdRenderer`: **ein `InstancedMesh` pro Körperteil** für Crowd + Band (28 Draw Calls total, unabhängig von der
+- `CrowdRenderer` (Fallback): **ein `InstancedMesh` pro Körperteil** für Crowd + Band (28 Draw Calls total, unabhängig von der
   Crowd-Größe). Pro Agent wird die Pose auf ein unsichtbares Scratch-Rig gelegt und die Teil-Matrizen kopiert;
   Farbe per `instanceColor`, Textur-Atlas-Zelle per Instanz-Attribut `instanceAtlas` (Shader-Patch in `ps1.ts`).
   Nicht getragene Varianten bekommen eine Null-Matrix. Der Spieler nutzt dieselben Teile mit Einzelmaterialien.
   Agenten auf der Sichtlinie Kamera→Spieler und direkt vor der Kamera werden ausgeblendet.
+- **Geskinnte Figuren (D-025/D-027, Standard):** `characters.ts` lädt `public/models/anims.glb` (Skelett + alle
+  Clips) und `char_<variante>.glb` (Spieler + 8 Crowd-Varianten). Clips werden per Knochenname gebunden; nur
+  Rotations-Tracks plus die Root-Position (auf die Hüfthöhe der Variante umgerechnet) werden genutzt.
+  `SkinnedCharacter.play(clip, key, fade)` blendet über (`crossFadeTo`), wiederholte Moves wechseln zwischen zwei
+  Actions desselben Clips; `setPhase()` setzt die Clip-Zeit aus dem Gameplay-Fortschritt (`timeScale = 0`).
+  `SkinnedCrowdRenderer` erzeugt eine Figur pro Agent (Variante per ID, Band mit festen Varianten + Gitarren-Mesh),
+  `PlayerView` nutzt die Spieler-Variante. Schatten: Spot-Licht über dem Pit (PS2/HD), nur der Spieler wirft Schatten.
+  Fallback auf die Instanced-Figuren unten, wenn die Modelle nicht laden.
 - `VenueBuilder` (statische Geometrie aus `VenueDefinition`), `StageLights` (4 Punktlichter, Kegel, Rauch),
   `CameraController` (Orbit, Raum-/Decken-Clamping, Shake, FOV-Kick), `PlayerView`, `Particles`, `SceneView`.
 
@@ -138,11 +146,13 @@ injizierbar (Tests nutzen In-Memory). Bei Formatänderung: Version erhöhen und 
 
 ## Performance-Überlegungen
 
-- Crowd-Instancing statt einzelner Meshes; Agent-Kollision über 1-m-Raster-Hash.
+- Geskinnte Crowd: geteilte Geometrie/Materialien/Clips, verdeckte Körperflächen entfernt, Crowd-LOD; ≈ 1,0 Mio.
+  Dreiecke / ≈ 460 Draw Calls pro Frame (D-027). Agent-Kollision über 1-m-Raster-Hash.
 - Niedrige interne Auflösung → Fragment-Last minimal; 4 dynamische Punktlichter + Ambient/Hemisphere.
 - Keine Allokationen im Pose-Pfad (vorallokierte `Float32Array`s), HUD ohne unnötige DOM-Writes.
 - Gameplay in 60-Hz-Unterschritten, Rendering einmal pro Frame.
-- Gemessen bisher nur in Headless-Chromium mit Software-Rendering (SwiftShader: ~20 FPS); echte GPU-Messungen stehen aus.
+- Gemessen bisher nur in Headless-Chromium mit Software-Rendering (SwiftShader: mit geskinnten Figuren nur 1–2 FPS,
+  da Skinning dort auf der CPU läuft); **Messung auf echter GPU steht aus** und entscheidet über weitere Optimierung.
 - Bundle ≈ 670 kB (≈ 175 kB gzip), fast vollständig three.js; Code-Splitting erst bei Bedarf.
 
 ## Tests

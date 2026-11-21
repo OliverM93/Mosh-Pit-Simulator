@@ -23,9 +23,11 @@ Ziel: Ein Song ist vollständig spielbar und fühlt sich wie ein kleiner Arcade-
 
 ## Phase 2 – Gameplay Polish 🟡 (nächste Phase)
 
-- 🟡 **Echte Figuren + Motion Capture (D-025):** Blender-Pipeline (MakeHuman CC0 + CMU-Mocap) steht, Prototyp mit
-  Spinkick + Cartwheel im Viewer. Offen: Gesichts-/Haut-/Kleidungstexturen, Varianten fürs Publikum, alle Moves
-  (Mocap + Keyframes für 2-Step/Windmills), Einbau ins Spiel (SkinnedMesh, Crossfades, Licht/Schatten), Performance
+- ✅ **Echte Figuren + Motion Capture im Spiel (D-025/D-027):** Spieler + 8 Crowd-Varianten aus Blender (MakeHuman CC0),
+  texturiert mit Gesichtern; 36 Clips (CMU-Mocap + umgerechnete Keyframe-Clips, gespiegelte Varianten);
+  Überblendungen, Schatten (PS2/HD), Crowd-LOD.
+  Offen: Performance auf echter GPU messen; Aufstehen nach dem Bail (aktuell harte Überblendung aus dem Liegen);
+  Merch-Logos aus `user-content` erscheinen noch nicht auf den neuen Figuren; Shirt-Säume teils ausgefranst
 - 🟡 Eigene Songs/Logos aus `public/user-content/` (Code + Tests da, Browser-Test und Doku offen)
 - ✅ Grafikstufen PS1 / PS2 / HD (Standard PS2) in den Einstellungen
 - ✅ Figuren-Look überarbeitet: glatt schattierte Low-Poly-Charaktere im Stil später 90er-3D-Fighter statt Quader,
@@ -37,8 +39,7 @@ Priorität nach Spielgefühl:
 2. ⬜ Audio-Kalibrierungsscreen (im Takt tippen → Offset automatisch bestimmen)
 3. ⬜ Weitere Moves: z. B. Haymaker/Windmill-Varianten, Stage Dive (von der Bühnenkante), Floorpunch, Two-Step-Varianten
 4. ⬜ Bessere Übergänge: Lauf→Move-Einstiege, Landungen mit Federung, Variation in Idle
-4a. ⬜ Geskinnte glTF-Charaktere mit in Blender erstellten Animationen (Spinkick, Butterfly Kick, Cartwheel zuerst),
-    abspielen über Three.js `AnimationMixer`; Box-Rig bleibt als Fallback/Crowd-LOD (D-021)
+4a. ✅ Geskinnte glTF-Charaktere mit Blender-/Mocap-Animationen über `AnimationMixer` (Box-Rig bleibt Fallback)
 5. ⬜ Stärkere Crowd-Reaktionen: Stage-Diver-NPC, Circle-Pit-Phasen, Crowd-Surfer, die man „abfangen“ kann
 6. ⬜ Mehr SFX-Varianten, Crowd-Gesänge bei Breakdowns, Ansager zwischen Songs
 7. ⬜ Kamera: Zoom-out bei großen Combos, optionale Auto-Kamera, Kollision mit Decke weicher
