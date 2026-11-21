@@ -9,6 +9,10 @@ Kurz und praktisch. Nach jeder größeren Aufgabe aktualisieren (älteren Stand 
 
 ## Zuletzt erledigt
 
+- **Figuren-Pipeline in Blender (D-025):** `tools/blender/` baut aus MakeHuman (CC0) + CMU-Mocap eine geskinnte
+  Figur mit Spinkick/Cartwheel → `public/models/proto.glb`, Ansicht: `viewer.html`. Noch nicht im Spiel.
+- Eigene Songs (`public/user-content/songs.json`, Auto-BPM) – Code/Tests fertig, Browser-Test + Doku offen.
+
 - Grafikstufen PS1/PS2/HD (D-024), echte Bandnamen auf Merch/Flyern (D-023).
 
 - Figuren-Overhaul (D-022): Low-Poly-Fighter-Look, Outfit-Katalog, Atlanten; README-Screenshot erneuert.

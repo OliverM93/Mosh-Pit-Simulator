@@ -1,6 +1,12 @@
 # Asset-Pipeline
 
-## Aktueller Stand: keine Asset-Dateien
+## Figuren-Pipeline (Blender, im Aufbau)
+
+Echte Figuren entstehen per Skript in Blender (headless) aus MakeHuman (CC0) + CMU-Mocap, siehe
+`tools/blender/README.md` und D-025. Ausgabe: `public/models/*.glb` (glTF 2.0, Skelett mit 38 Knochen, Animationen
+als Clips). Prüfen im Browser: `viewer.html`.
+
+## Bisheriger Stand: prozedurale Inhalte
 
 Phase 1 enthält **keine** importierten 3D-Modelle, Texturen, Audiodateien oder Fonts. Alles wird zur Laufzeit erzeugt:
 
@@ -67,4 +73,5 @@ Regeln:
 
 | Datei | Quelle / Autor | Lizenz | Hinzugefügt |
 | --- | --- | --- | --- |
-| *(noch keine externen Assets)* | | | |
+| MakeHuman base mesh, targets, default skeleton + weights, eyes (verarbeitet zu `public/models/*.glb`) | MakeHuman / Data Collection AB | CC0 1.0 | 2026-11-21 |
+| CMU Graphics Lab Motion Capture Database, BVH-Konvertierung B. Hahne (88_06, 90_02) | Carnegie Mellon University | frei für Forschung und kommerzielle Nutzung | 2026-11-21 |

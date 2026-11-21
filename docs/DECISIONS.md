@@ -7,6 +7,21 @@ Format: **Datum · Entscheidung** – Begründung · Betroffene Systeme · Alter
 
 ---
 
+### D-025 · 2026-11-21 · Echte Figuren aus Blender (MakeHuman CC0) mit CMU-Motion-Capture
+- **Anlass:** Owner will mindestens PS2-Niveau (Referenz: Resident Evil 4, Tekken 4/5) mit echten Modellen und
+  Animationen. Werkzeugwahl Claude überlassen.
+- **Entscheidung:** Blender 5.3 headless (`bpy`-Modul) baut die Figuren per Skript aus dem MakeHuman-Basismodell
+  (CC0, professionell modellierter Körper, Morph-Targets, Skelett + Gewichtung). Kleidung wird aus dem Körper
+  modelliert (Shirt, Baggy Pants, Sneaker, Cap) und mitgeskinnt. Bewegungen kommen aus der CMU-Mocap-Datenbank
+  (frei, auch kommerziell) und werden per eigenem Retargeting auf ein 38-Knochen-Spielskelett übertragen.
+  Export als glTF/GLB, im Browser `SkinnedMesh` + `AnimationMixer`.
+- **Begründung:** Three.js ist nicht der Engpass (Skinning, PBR, Schatten vorhanden), sondern die Assets. Externe
+  Asset-Seiten (Mixamo, Sketchfab, Blender-Download) sind in der Cloud-Umgebung nicht erreichbar, GitHub und PyPI
+  schon. Alles bleibt per Skript reproduzierbar (`tools/blender/`).
+- **Stand:** Prototyp (eine Figur, Spinkick + Cartwheel) läuft im Viewer; Spiel nutzt noch die alten Figuren.
+- **Alternativen:** Figuren per Skript aus Grundformen „schnitzen“ (Qualität zu gering), Mixamo (Account nötig,
+  nicht erreichbar), Engine-Wechsel (löst das Asset-Problem nicht).
+
 ### D-024 · 2026-11-21 · Grafikstufen PS1 / PS2 / HD, Standard PS2
 - **Begründung:** Owner findet den PS1-Look zu low-poly. Statt den Stil fest umzustellen, sind die Retro-Effekte
   jetzt einstellbar; Standard ist PS2 (540p, kein Jitter, runde Figuren). So lässt sich beim Testen vergleichen.

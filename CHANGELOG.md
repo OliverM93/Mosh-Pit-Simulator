@@ -5,6 +5,12 @@ Versionierung nach [SemVer](https://semver.org/lang/de/) (vor 1.0 kann sich alle
 
 ## [Unreleased]
 
+### Hinzugefügt (in Arbeit)
+
+- Blender-Pipeline (headless) für echte Figuren aus MakeHuman (CC0) mit CMU-Motion-Capture; Prototyp-Modell und
+  Dev-Viewer (`viewer.html`).
+- Eigene Songs und Logos aus `public/user-content/` mit automatischer BPM-/Offset-Erkennung (noch ohne Doku).
+
 ### Hinzugefügt
 
 - Grafik-Einstellung PS1 / PS2 / HD (Standard PS2): höhere interne Auflösung, ohne Vertex-Jitter, feinere Farben,

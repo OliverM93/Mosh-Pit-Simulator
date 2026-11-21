@@ -23,6 +23,10 @@ Ziel: Ein Song ist vollständig spielbar und fühlt sich wie ein kleiner Arcade-
 
 ## Phase 2 – Gameplay Polish 🟡 (nächste Phase)
 
+- 🟡 **Echte Figuren + Motion Capture (D-025):** Blender-Pipeline (MakeHuman CC0 + CMU-Mocap) steht, Prototyp mit
+  Spinkick + Cartwheel im Viewer. Offen: Gesichts-/Haut-/Kleidungstexturen, Varianten fürs Publikum, alle Moves
+  (Mocap + Keyframes für 2-Step/Windmills), Einbau ins Spiel (SkinnedMesh, Crossfades, Licht/Schatten), Performance
+- 🟡 Eigene Songs/Logos aus `public/user-content/` (Code + Tests da, Browser-Test und Doku offen)
 - ✅ Grafikstufen PS1 / PS2 / HD (Standard PS2) in den Einstellungen
 - ✅ Figuren-Look überarbeitet: glatt schattierte Low-Poly-Charaktere im Stil später 90er-3D-Fighter statt Quader,
   Kleidung/Tattoos/Gesichter per Atlas, Looks nach Referenzfotos des Owners
