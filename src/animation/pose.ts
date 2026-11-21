@@ -33,8 +33,8 @@ export function createPose(): Pose {
 
 /** Relaxed standing pose every spec is layered on. */
 export const BASE_SPEC: PoseSpec = {
-  shoulderL: [0, 0, 0.12],
-  shoulderR: [0, 0, -0.12],
+  shoulderL: [0, 0, 0.1],
+  shoulderR: [0, 0, -0.1],
   elbowL: [-0.15, 0, 0],
   elbowR: [-0.15, 0, 0],
 };

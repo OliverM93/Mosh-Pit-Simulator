@@ -1,56 +1,64 @@
 import * as THREE from 'three';
 import { Animator } from '../animation/Animator';
 import type { CrowdAgent } from '../gameplay/crowd/CrowdSim';
-import { CharacterRig, PART_NAMES, PART_SLOT, partGeometries, type PartName } from './CharacterRig';
+import { atlasFor, CharacterRig, characterMaterial } from './CharacterRig';
+import { PART_DEFS, partGeometries, resolveLook, type PartName } from './characterParts';
+import { cellOffset } from './characterTextures';
 import { lambert } from './ps1';
-import { clothTexture, faceTexture } from './textures';
 
 const ZERO = new THREE.Matrix4().makeScale(0, 0, 0);
 
 /**
  * Draws the whole crowd + band with one InstancedMesh per body part
- * (~15 draw calls total regardless of crowd size). Each agent's pose is
+ * (constant draw calls regardless of crowd size). Each agent's pose is
  * evaluated on a shared scratch rig whose part matrices are copied over.
+ * Per-instance colour and texture-atlas cell give every person their own
+ * outfit, tattoos and face.
  */
 export class CrowdRenderer {
   readonly group = new THREE.Group();
-  private readonly meshes: Record<PartName, THREE.InstancedMesh>;
+  private readonly meshes = {} as Record<PartName, THREE.InstancedMesh>;
+  private readonly visible: Record<PartName, boolean>[] = [];
   private readonly scratch: CharacterRig;
   private readonly animators: Animator[] = [];
   private readonly agents: readonly CrowdAgent[];
-  private readonly tmpColor = new THREE.Color();
 
   constructor(agents: readonly CrowdAgent[]) {
     this.agents = agents;
     const n = agents.length;
     const geo = partGeometries();
-    const cloth = lambert({ map: clothTexture() });
-    const skin = lambert({ map: faceTexture() });
-    const plain = lambert({});
-    this.meshes = {} as Record<PartName, THREE.InstancedMesh>;
-    for (const name of PART_NAMES) {
-      const mat = name === 'head' ? skin : PART_SLOT[name] === 'skin' || PART_SLOT[name] === 'prop' ? plain : cloth;
-      const mesh = new THREE.InstancedMesh(geo[name], mat, n);
+    const materials = new Map<string, THREE.Material>();
+    for (const def of PART_DEFS) {
+      let mat = materials.get(def.kind);
+      if (!mat) materials.set(def.kind, (mat = characterMaterial(def.kind, true)));
+      const g = geo[def.name].clone();
+      if (atlasFor(def.kind)) g.setAttribute('instanceAtlas', new THREE.InstancedBufferAttribute(new Float32Array(n * 2), 2));
+      const mesh = new THREE.InstancedMesh(g, mat, n);
       mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
       mesh.frustumCulled = false;
-      this.meshes[name] = mesh;
+      this.meshes[def.name] = mesh;
       this.group.add(mesh);
     }
-    this.scratch = new CharacterRig({}, plain);
-    for (let i = 0; i < n; i++) {
+    this.scratch = new CharacterRig({}, lambert({}));
+    const color = new THREE.Color();
+    agents.forEach((a, i) => {
       this.animators.push(new Animator());
-      this.applyColors(i, agents[i]!);
-    }
-    for (const name of PART_NAMES) this.meshes[name].instanceColor!.needsUpdate = true;
-  }
-
-  private applyColors(i: number, a: CrowdAgent): void {
-    const ap = a.appearance;
-    for (const name of PART_NAMES) {
-      const slot = PART_SLOT[name];
-      const hex = slot === 'skin' ? ap.skin : slot === 'shirt' ? ap.shirt : slot === 'pants' ? ap.pants : slot === 'shoes' ? ap.shoes : slot === 'hat' ? (ap.hat ?? 0) : a.band === 'bass' ? 0x1a3a8a : 0x8a1010;
-      this.meshes[name].setColorAt(i, this.tmpColor.setHex(hex));
-    }
+      const look = resolveLook(a.appearance, a.band);
+      const vis = {} as Record<PartName, boolean>;
+      for (const def of PART_DEFS) {
+        const l = look[def.name];
+        vis[def.name] = l.visible;
+        const mesh = this.meshes[def.name];
+        mesh.setColorAt(i, color.setHex(l.color));
+        const atlas = atlasFor(def.kind);
+        if (atlas) {
+          const [u, v] = cellOffset(atlas, l.cell);
+          (mesh.geometry.getAttribute('instanceAtlas') as THREE.InstancedBufferAttribute).setXY(i, u, v);
+        }
+      }
+      this.visible.push(vis);
+    });
+    for (const def of PART_DEFS) this.meshes[def.name].instanceColor!.needsUpdate = true;
   }
 
   /**
@@ -83,21 +91,22 @@ export class CrowdRenderer {
           hide = ox * ox + oz * oz < 0.36;
         }
       }
+      const vis = this.visible[i]!;
       if (hide) {
-        for (const name of PART_NAMES) this.meshes[name].setMatrixAt(i, ZERO);
+        for (const def of PART_DEFS) this.meshes[def.name].setMatrixAt(i, ZERO);
         continue;
       }
       rig.apply(pose, a.x, a.y, a.z, a.yaw, a.appearance.height, a.appearance.build);
       rig.root.updateMatrixWorld(true);
-      for (const name of PART_NAMES) {
-        const hidden = (name === 'hat' && a.appearance.hat === null) || (name === 'guitar' && a.band !== 'guitar' && a.band !== 'bass');
-        this.meshes[name].setMatrixAt(i, hidden ? ZERO : rig.parts[name].matrixWorld);
-      }
+      for (const def of PART_DEFS) this.meshes[def.name].setMatrixAt(i, vis[def.name] ? rig.parts[def.name].matrixWorld : ZERO);
     }
-    for (const name of PART_NAMES) this.meshes[name].instanceMatrix.needsUpdate = true;
+    for (const def of PART_DEFS) this.meshes[def.name].instanceMatrix.needsUpdate = true;
   }
 
   dispose(): void {
-    for (const name of PART_NAMES) this.meshes[name].dispose();
+    for (const def of PART_DEFS) {
+      this.meshes[def.name].geometry.dispose();
+      this.meshes[def.name].dispose();
+    }
   }
 }

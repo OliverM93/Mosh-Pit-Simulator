@@ -40,58 +40,6 @@ function cached(key: string, make: () => THREE.Texture): THREE.Texture {
   return t;
 }
 
-/** Light grey cloth grime, tinted per instance. */
-export function clothTexture(): THREE.Texture {
-  return cached('cloth', () => {
-    const [c, ctx] = canvas(16, 16);
-    ctx.fillStyle = '#e6e6e6';
-    ctx.fillRect(0, 0, 16, 16);
-    speckle(ctx, 16, 16, new Rng(7), 0.6, 0.25);
-    return toTexture(c, true);
-  });
-}
-
-/**
- * Face: the front of the head box maps the whole texture, all other faces
- * sample the plain skin pixel at (1,1).
- */
-export function faceTexture(): THREE.Texture {
-  return cached('face', () => {
-    const [c, ctx] = canvas(16, 16);
-    ctx.fillStyle = '#f2f2f2';
-    ctx.fillRect(0, 0, 16, 16);
-    ctx.fillStyle = '#1a1210';
-    ctx.fillRect(3, 6, 3, 2); // eyes
-    ctx.fillRect(10, 6, 3, 2);
-    ctx.fillStyle = '#3a2a24';
-    ctx.fillRect(2, 4, 4, 1); // angry brows
-    ctx.fillRect(10, 4, 4, 1);
-    ctx.fillStyle = '#5a2020';
-    ctx.fillRect(5, 11, 6, 2); // shouting mouth
-    ctx.fillStyle = '#c8c8c8';
-    ctx.fillRect(7, 8, 2, 2); // nose shade
-    return toTexture(c);
-  });
-}
-
-/** Band-shirt front print for the player. */
-export function shirtTexture(text: string, ink: string, base: string): THREE.Texture {
-  return cached(`shirt:${text}:${ink}:${base}`, () => {
-    const [c, ctx] = canvas(32, 32);
-    ctx.fillStyle = base;
-    ctx.fillRect(0, 0, 32, 32);
-    ctx.fillStyle = ink;
-    ctx.font = 'bold 9px monospace';
-    ctx.textAlign = 'center';
-    ctx.fillText(text, 16, 13);
-    ctx.fillRect(6, 17, 20, 2);
-    ctx.font = 'bold 6px monospace';
-    ctx.fillText('XXX', 16, 26);
-    speckle(ctx, 32, 32, new Rng(3), 0.3, 0.2);
-    return toTexture(c);
-  });
-}
-
 export function concreteTexture(tint: string): THREE.Texture {
   return cached(`concrete:${tint}`, () => {
     const [c, ctx] = canvas(64, 64);

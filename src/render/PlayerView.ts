@@ -1,29 +1,10 @@
 import * as THREE from 'three';
 import { Animator } from '../animation/Animator';
+import { PLAYER_APPEARANCE, type Appearance } from '../data/appearance';
 import type { PitSession } from '../gameplay/PitSession';
-import { CharacterRig, type PartName } from './CharacterRig';
+import { CharacterRig, singleCharacterMaterials } from './CharacterRig';
+import { resolveLook } from './characterParts';
 import { basic, lambert } from './ps1';
-import { clothTexture, faceTexture, shirtTexture } from './textures';
-
-export interface PlayerLook {
-  skin: number;
-  shirt: string;
-  shirtInk: string;
-  shirtText: string;
-  pants: number;
-  shoes: number;
-  hat: number | null;
-}
-
-export const DEFAULT_LOOK: PlayerLook = {
-  skin: 0xe0ac85,
-  shirt: '#f2f2f2',
-  shirtInk: '#c01818',
-  shirtText: 'MOSH',
-  pants: 0x4d5532,
-  shoes: 0xf0f0f0,
-  hat: 0xb01010,
-};
 
 /** The player's character: rig, animator, blob shadow and the "space ring". */
 export class PlayerView {
@@ -36,27 +17,18 @@ export class PlayerView {
   private ringPulse = 0;
   bailStart = -Infinity;
   bailUntil = -Infinity;
+  private readonly build: number;
+  private readonly height: number;
 
-  constructor(look: PlayerLook = DEFAULT_LOOK) {
-    const cloth = clothTexture();
-    const mats: Partial<Record<PartName, THREE.Material>> = {
-      torso: lambert({ map: shirtTexture(look.shirtText, look.shirtInk, look.shirt) }),
-      upperArmL: lambert({ map: cloth, color: look.shirt }),
-      upperArmR: lambert({ map: cloth, color: look.shirt }),
-      head: lambert({ map: faceTexture(), color: look.skin }),
-      forearmL: lambert({ color: look.skin }),
-      forearmR: lambert({ color: look.skin }),
-      hat: lambert({ color: look.hat ?? 0 }),
-      footL: lambert({ color: look.shoes }),
-      footR: lambert({ color: look.shoes }),
-    };
-    const pants = lambert({ map: cloth, color: look.pants });
-    for (const p of ['pelvis', 'thighL', 'thighR', 'shinL', 'shinR'] as const) mats[p] = pants;
+  constructor(appearance: Appearance = PLAYER_APPEARANCE) {
     // A touch of self-illumination keeps the player readable in the dark pit.
-    for (const m of [...Object.values(mats), pants]) (m as THREE.MeshLambertMaterial).emissive.setHex(0x262222);
-    this.rig = new CharacterRig(mats, pants);
-    this.rig.parts.guitar.visible = false;
-    this.rig.parts.hat.visible = look.hat !== null;
+    const mats = singleCharacterMaterials(resolveLook(appearance), 0x2a2420);
+    this.rig = new CharacterRig(mats, lambert({}));
+    const look = resolveLook(appearance);
+    for (const name of Object.keys(look) as (keyof typeof look)[]) this.rig.parts[name].visible = look[name].visible;
+    this.rig.root.scale.set(appearance.build, appearance.height, appearance.build);
+    this.build = appearance.build;
+    this.height = appearance.height;
     this.group.add(this.rig.root);
 
     this.ringMat = basic({ color: 0x40ff80, transparent: true, opacity: 0.55, depthWrite: false });
@@ -96,7 +68,7 @@ export class PlayerView {
         this.animator.update(dt, s.timeline.beatAt(Math.max(0, t)));
       }
     }
-    this.rig.apply(this.animator.pose, p.x, p.y, p.z, p.yaw);
+    this.rig.apply(this.animator.pose, p.x, p.y, p.z, p.yaw, this.height, this.build);
 
     // Space ring: green = room for big moves, red = cramped. Pulses on the beat.
     const free = s.crowd.freeSpace(p.x, p.z);

@@ -1,22 +1,14 @@
 import { clamp, damp, dampAngle, TAU } from '../../core/math';
 import { Rng } from '../../core/random';
+import { randomAppearance, type Appearance } from '../../data/appearance';
 import type { VenueDefinition } from '../../data/venueTypes';
+
+export type { Appearance };
 
 export type CrowdRole = 'watcher' | 'dancer' | 'ninja' | 'surfer' | 'band';
 export type BandRole = 'vocals' | 'guitar' | 'bass' | 'drums';
 export type WatcherTrait = 'bobber' | 'headbanger' | 'fist' | 'crossed';
 export type AgentState = 'idle' | 'dance' | 'stumble' | 'cheer' | 'shove' | 'ooh' | 'surf' | 'band';
-
-export interface Appearance {
-  skin: number;
-  shirt: number;
-  pants: number;
-  shoes: number;
-  /** Cap/beanie colour or null. */
-  hat: number | null;
-  height: number;
-  build: number;
-}
 
 export interface CrowdAgent {
   id: number;
@@ -69,12 +61,6 @@ export interface CrowdContext {
   playerZ: number;
 }
 
-const SKINS = [0xf1c7a5, 0xe0ac85, 0xc68a5e, 0x8d5a3b, 0x5e3a25, 0xf5d6c0];
-const SHIRTS = [0x151515, 0x151515, 0x1c1c1c, 0x101010, 0xe8e8e8, 0x6b6b6b, 0x5c1a1a, 0x1d3b24, 0x1b2448, 0xd9c31a, 0x8a2be2, 0x7a4a1c];
-const PANTS = [0x15171c, 0x1f2b4a, 0x2e3d63, 0x4d5532, 0x7a6a4a, 0x2a2a2a, 0x6b6b70];
-const SHOES = [0xf0f0f0, 0x111111, 0xdddddd, 0x6b1010, 0x333333];
-const HATS = [0x111111, 0x8a1010, 0x204060, 0x2d4d2d, 0xe0e0e0];
-
 export const CROWD_TUNING = {
   ringGap: 0.6,
   rowGap: 0.6,
@@ -122,16 +108,7 @@ export class CrowdSim {
   }
 
   private appearance(): Appearance {
-    const r = this.rng;
-    return {
-      skin: r.pick(SKINS),
-      shirt: r.pick(SHIRTS),
-      pants: r.pick(PANTS),
-      shoes: r.pick(SHOES),
-      hat: r.chance(0.3) ? r.pick(HATS) : null,
-      height: r.range(0.92, 1.08),
-      build: r.range(0.9, 1.2),
-    };
+    return randomAppearance(this.rng);
   }
 
   private makeAgent(role: CrowdRole, x: number, z: number): CrowdAgent {
@@ -224,8 +201,14 @@ export class CrowdSim {
       a.state = 'band';
       a.y = v.stage.height;
       a.yaw = 0; // face the crowd (+z)
-      a.appearance.shirt = role === 'vocals' ? 0xe8e8e8 : 0x151515;
-      a.appearance.hat = role === 'drums' ? 0x8a1010 : null;
+      const look = a.appearance;
+      look.shirt = role === 'vocals' ? 'hoodie' : role === 'guitar' ? 'tee_skull' : role === 'bass' ? 'jersey' : 'tee_brickface';
+      look.headwear = role === 'drums' ? 'cap_back' : role === 'vocals' ? 'none' : 'cap';
+      if (role === 'vocals') {
+        look.hair = 'bald';
+        look.beard = true;
+      }
+      look.tattoo = 2;
     }
   }
 
