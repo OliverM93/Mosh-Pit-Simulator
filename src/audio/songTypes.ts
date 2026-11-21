@@ -63,7 +63,7 @@ export interface SynthPattern {
   crash?: string;
   tom?: string;
   guitar: string;
-  /** Lead single-note line (optional), same token set as guitar but plays single notes an octave up. */
+  /** Lead single-note line (optional), same token set as guitar, played two octaves above the root. */
   lead?: string;
   /** Open (ringing) hats instead of closed. */
   openHat?: boolean;
