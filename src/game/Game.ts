@@ -51,6 +51,8 @@ export class Game {
   private endTimer = 0;
   private pausedAt = 0;
   private sessionUnsub: Array<() => void> = [];
+  /** Set when Free Pit restarts the song mid-frame: remaining sub-steps are skipped. */
+  private restartedThisFrame = false;
 
   constructor(container: HTMLElement) {
     this.renderer = new Renderer(container);
@@ -162,6 +164,7 @@ export class Game {
   // ------------------------------------------------------------------ session lifecycle
 
   private async startSong(song: SongDefinition): Promise<void> {
+    if (this.state === 'loading') return; // ignore double activation
     this.state = 'loading';
     this.song = song;
     await this.audio.unlock();
@@ -230,6 +233,7 @@ export class Game {
       const ctx = this.audio.ctx!;
       const start = ctx.currentTime + 0.6;
       s.restart(false);
+      this.restartedThisFrame = true;
       this.playback?.start(start);
       this.clock?.start(start);
       this.lastSongTime = -0.6;
@@ -386,8 +390,10 @@ export class Game {
         presses: i === 1 ? presses : [],
       };
       s.update(dt / steps, from + ((songTime - from) * i) / steps, frameInput);
+      if (this.restartedThisFrame) break;
     }
-    this.lastSongTime = songTime;
+    if (this.restartedThisFrame) this.restartedThisFrame = false;
+    else this.lastSongTime = songTime;
 
     view.update(dt);
     this.hud.update(dt, s, this.input.lastDevice, this.save.data.settings.showMoveList);
