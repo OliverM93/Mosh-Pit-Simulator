@@ -21,8 +21,14 @@ const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x15101a);
 scene.fog = new THREE.Fog(0x15101a, 6, 14);
 const camera = new THREE.PerspectiveCamera(35, innerWidth / innerHeight, 0.1, 50);
-camera.position.set(1.6, 1.5, 3.6);
-camera.lookAt(0, 0.95, 0);
+const CAMS: Record<string, [number, number, number, number, number, number]> = {
+  full: [1.6, 1.5, 3.6, 0, 0.95, 0],
+  face: [0.25, 1.68, 0.75, 0, 1.6, 0],
+  side: [3.4, 1.3, 0.4, 0, 0.95, 0],
+};
+const cam = CAMS[params.get('cam') ?? 'full'] ?? CAMS.full!;
+camera.position.set(cam[0], cam[1], cam[2]);
+camera.lookAt(cam[3], cam[4], cam[5]);
 
 scene.add(new THREE.HemisphereLight(0x8a7aa8, 0x2a1a14, 0.9));
 const key = new THREE.SpotLight(0xffe2c0, 60, 12, 0.6, 0.5, 1.2);

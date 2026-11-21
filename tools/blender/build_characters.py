@@ -21,6 +21,7 @@ from mathutils import Vector, kdtree
 sys.path.insert(0, os.path.dirname(__file__))
 from mh import BaseMesh, Skeleton, to_blender  # noqa: E402
 from retarget import retarget  # noqa: E402
+import textures as tx  # noqa: E402
 
 # ---------------------------------------------------------------- body presets
 
@@ -108,6 +109,89 @@ def skin(ob, rig, used, weights_by_bone, override=None):
     ob.parent = rig
 
 
+def cut_clothing(name, source, planes, keep_near, smooth=8, drop_arms=None):
+    """Copy the source mesh, cut it with (point, normal) planes keeping the side opposite the normal,
+    keep the connected piece nearest `keep_near`, smooth away anatomy, return a new object."""
+    bm = bmesh.new()
+    bm.from_mesh(source.data)
+    for plane in planes:
+        co, no = plane[0], plane[1]
+        region = plane[2] if len(plane) > 2 else None  # optional predicate limiting the cut (e.g. one arm)
+        verts = [v for v in bm.verts if region is None or region(v.co)]
+        vs = set(verts)
+        edges = [e for e in bm.edges if e.verts[0] in vs and e.verts[1] in vs]
+        faces = [f for f in bm.faces if all(v in vs for v in f.verts)]
+        bmesh.ops.bisect_plane(bm, geom=verts + edges + faces, plane_co=co, plane_no=no, clear_outer=True)
+    if drop_arms:
+        sh_l, sh_r, hip_z = drop_arms
+        kill = [f for f in bm.faces if abs(f.calc_center_median().x) > abs(sh_l.x) * 0.8 and f.calc_center_median().z > hip_z]
+        bmesh.ops.delete(bm, geom=kill, context='FACES')
+    # Keep only the connected component closest to keep_near (drops hands/head islands).
+    bm.verts.ensure_lookup_table()
+    seen, best, best_d = set(), None, 1e9
+    for v in bm.verts:
+        if v.index in seen:
+            continue
+        comp, stack = [], [v]
+        seen.add(v.index)
+        while stack:
+            x = stack.pop()
+            comp.append(x)
+            for e in x.link_edges:
+                o = e.other_vert(x)
+                if o.index not in seen:
+                    seen.add(o.index)
+                    stack.append(o)
+        d = min((x.co - keep_near).length for x in comp)
+        if len(comp) > 50 and d < best_d:
+            best, best_d = comp, d
+    keep = {x.index for x in best}
+    bmesh.ops.delete(bm, geom=[v for v in bm.verts if v.index not in keep], context='VERTS')
+    inner = [v for v in bm.verts if not v.is_boundary]
+    for _ in range(smooth):
+        bmesh.ops.smooth_vert(bm, verts=inner, factor=0.5, use_axis_x=True, use_axis_y=True, use_axis_z=True)
+    me = bpy.data.meshes.new(name)
+    bm.to_mesh(me)
+    bm.free()
+    for poly in me.polygons:
+        poly.use_smooth = True
+    ob = bpy.data.objects.new(name, me)
+    bpy.context.scene.collection.objects.link(ob)
+    return ob
+
+
+def transfer_weights(ob, source, source_used, weights_by_bone, rig):
+    """Copy skin weights from the nearest vertex of the (rest-pose) source body."""
+    kd = kdtree.KDTree(len(source.data.vertices))
+    for v in source.data.vertices:
+        kd.insert(v.co, v.index)
+    kd.balance()
+    per_src = {}
+    index = {old: new for new, old in enumerate(source_used)}
+    for bone, lst in weights_by_bone.items():
+        for i, w in lst:
+            j = index.get(i)
+            if j is not None:
+                per_src.setdefault(j, []).append((bone, w))
+    groups = {}
+    for v in ob.data.vertices:
+        _, j, _ = kd.find(v.co)
+        for bone, w in per_src.get(j, []):
+            if bone not in groups:
+                groups[bone] = ob.vertex_groups.new(name=bone)
+            groups[bone].add([v.index], w, 'REPLACE')
+    mod = ob.modifiers.new('Armature', 'ARMATURE')
+    mod.object = rig
+    ob.parent = rig
+
+
+def inflate(bm, amount):
+    """Push every vertex along its normal – keeps cloth clear of the skin everywhere."""
+    bm.normal_update()
+    for v in bm.verts:
+        v.co += v.normal * amount
+
+
 def radial_push(bm, center_fn, factor_fn):
     for v in bm.verts:
         c = center_fn(v.co)
@@ -140,6 +224,8 @@ def main():
     ap.add_argument('--preview', default='')
     ap.add_argument('--cmu', default='', help='cmu-mocap data dir (BVH)')
     ap.add_argument('--anim-preview', default='')
+    ap.add_argument('--tex', type=int, default=1024, help='body texture size (0 = untextured)')
+    ap.add_argument('--no-cap', action='store_true')
     args = ap.parse_args(sys.argv[sys.argv.index('--') + 1:] if '--' in sys.argv else sys.argv[1:])
 
     clear_scene()
@@ -167,78 +253,64 @@ def main():
     eyes, eyes_used = make_mesh('Eyes', mesh, ['helper-l-eye', 'helper-r-eye'], P)
     skin(eyes, rig, eyes_used, weights, override='head')
 
-    # ---- T-shirt from the tights helper: torso + upper half of the upper arm.
+    # ---- Clothes are cut from a smoothed copy of the full body with planes → clean hems, collar, sleeves.
     hip_z = jp('upperleg01.L____head').z + 0.04
-    neck_z = jp('neck01____head').z - 0.015
-    spine_a, spine_b = jp('upperleg01.L____head') * 0 + Vector((0, jp('spine05____head').y, hip_z - 0.1)), jp('neck01____head')
-    arms = [(jp('shoulder01.L____head'), jp('lowerarm01.L____head')), (jp('shoulder01.R____head'), jp('lowerarm01.R____head'))]
+    neck = jp('neck01____head')
+    sh_l, el_l = jp('upperarm01.L____head'), jp('lowerarm01.L____head')
+    sh_r, el_r = jp('upperarm01.R____head'), jp('lowerarm01.R____head')
+    waist_z = jp('spine05____head').z + 0.03
+    ankle_z = jp('foot.L____head').z + 0.02
+    full, full_used = make_mesh('__full', mesh, ['body'], P)
 
-    def in_shirt(i):
-        co = Vector(to_blender(P[i]))
-        if co.z < hip_z - 0.07 or co.z > neck_z:
-            return False
-        dt = (co - closest_on_segment(co, spine_a, spine_b)[0]).length
-        for a, b in arms:
-            c, t = closest_on_segment(co, a, b)
-            if (co - c).length < dt and t > 0.08:
-                return t < 0.55  # short sleeve ends mid upper arm
-        return True
-
-    shirt, shirt_used = subset_mesh('Shirt', mesh, 'helper-tights', P, in_shirt)
-    bm = bmesh.new()
-    bm.from_mesh(shirt.data)
+    shirt = cut_clothing('Shirt', full, [
+        (Vector((0, 0, hip_z - 0.07)), Vector((0, 0, -1))),                        # hem
+        (neck + Vector((0, 0.0, -0.005)), Vector((0, -0.55, 1)).normalized()),    # crew neck, lower in front
+        (sh_l + (el_l - sh_l) * 0.5, (el_l - sh_l).normalized(), lambda co: co.x > sh_l.x - 0.02),  # short sleeves
+        (sh_r + (el_r - sh_r) * 0.5, (el_r - sh_r).normalized(), lambda co: co.x < sh_r.x + 0.02),
+    ], keep_near=neck + Vector((0, 0, -0.2)), smooth=4)
+    spine_axis = (Vector((0, neck.y, hip_z - 0.1)), neck)
 
     def shirt_center(co):
         best = None
-        for a, b in [(spine_a, spine_b)] + arms:
+        for a, b in [spine_axis, (sh_l, el_l), (sh_r, el_r)]:
             c, _ = closest_on_segment(co, a, b)
             if best is None or (co - c).length < (co - best).length:
                 best = c
         return best
 
-    radial_push(bm, shirt_center, lambda co: 1.1)
-    # Close small gaps (armpits); neck, hem and sleeve openings are much larger and stay open.
-    bmesh.ops.holes_fill(bm, edges=[e for e in bm.edges if e.is_boundary], sides=14)
+    bm = bmesh.new()
+    bm.from_mesh(shirt.data)
+    radial_push(bm, shirt_center, lambda co: 1.11)
+    inflate(bm, 0.009)
     bm.to_mesh(shirt.data)
     bm.free()
-    skin(shirt, rig, shirt_used, weights)
+    transfer_weights(shirt, full, full_used, weights, rig)
 
-    # ---- Baggy pants: everything below the waist down to the ankle, flared towards the bottom.
-    pant_bones = {'root', 'spine05', 'pelvis.L', 'pelvis.R', 'upperleg01.L', 'upperleg01.R', 'upperleg02.L',
-                  'upperleg02.R', 'lowerleg01.L', 'lowerleg01.R', 'lowerleg02.L', 'lowerleg02.R'}
-    waist_z = jp('spine05____head').z + 0.03
-    ankle_z = jp('foot.L____head').z + 0.02
-    pants, pants_used = subset_mesh('Pants', mesh, 'body', P,
-                                    lambda i: dom(i) in pant_bones and ankle_z + 0.03 < to_blender(P[i])[2] < waist_z)
     legs = [(jp('upperleg01.L____head'), jp('foot.L____head')), (jp('upperleg01.R____head'), jp('foot.R____head'))]
+    pants = cut_clothing('Pants', full, [
+        (Vector((0, 0, waist_z)), Vector((0, 0, 1))),                               # waistband
+        (Vector((0, 0, ankle_z + 0.025)), Vector((0, 0, -1))),                      # hems
+    ], keep_near=Vector((0, legs[0][0].y, hip_z - 0.1)), smooth=1, drop_arms=(sh_l, sh_r, hip_z))
     bm = bmesh.new()
     bm.from_mesh(pants.data)
-
-    def leg_center(co):
-        if co.z > hip_z + 0.02:
-            return Vector((0, 0, co.z)) if abs(co.x) < 0.25 else None
-        a, b = legs[0] if co.x > 0 else legs[1]
-        return closest_on_segment(co, a, b)[0]
-
-    top, bottom = waist_z, ankle_z
     knee_z = jp('lowerleg01.L____head').z
+    bottom = ankle_z
     for v in bm.verts:
-        c = leg_center(v.co)
-        if c is None:
+        if v.co.z > hip_z - 0.02:
+            c = Vector((0, legs[0][0].y, v.co.z))
+            v.co = c + (v.co - c) * 1.06
             continue
+        cands = [closest_on_segment(v.co, a, b)[0] for a, b in legs]
+        c = min(cands, key=lambda q: (v.co - q).length)
         d = v.co - c
-        if v.co.z > hip_z - 0.02:  # seat/crotch: just loosen
-            v.co = c + d * 1.06
-            continue
-        # Baggy cut: target radius grows from the thigh (11 cm) to the hem (13 cm), never tighter than the leg.
         t = max(0.0, min(1.0, (hip_z - v.co.z) / (hip_z - bottom)))
-        target = 0.088 + 0.012 * t
-        if v.co.z < knee_z:
-            target += 0.006
-        v.co = c + d.normalized() * max(d.length * 1.1, target * (0.85 + 0.15 * abs(d.normalized().x)))
+        target = 0.088 + 0.012 * t + (0.006 if v.co.z < knee_z else 0)
+        v.co = c + d.normalized() * max(d.length * 1.15, target * (0.85 + 0.15 * abs(d.normalized().x)))
+    inflate(bm, 0.006)
     bm.to_mesh(pants.data)
     bm.free()
-    skin(pants, rig, pants_used, weights)
+    transfer_weights(pants, full, full_used, weights, rig)
+    bpy.data.objects.remove(full)
 
     # ---- Sneakers: convex hull of each foot (no toes), smoothed, flat chunky sole.
     foot_bones = {'foot.L', 'foot.R', 'toe1-1.L', 'toe1-1.R'}
@@ -303,6 +375,15 @@ def main():
     bpy.ops.object.join()
     skin(cap, rig, [], {}, override='head')
 
+    objs = [body, eyes, shirt, pants, shoes] + ([] if args.no_cap else [cap])
+    if args.no_cap:
+        bpy.data.objects.remove(cap)
+    if args.tex:
+        lm = landmarks(mesh, sk, P, jp)
+        texture_all(args.tex, lm, body, eyes, shirt, pants, shoes, None if args.no_cap else cap)
+    else:
+        assign_materials(objs)
+
     clips = []
     if args.cmu:
         for name, file, start, end, in_place in CLIPS:
@@ -310,24 +391,82 @@ def main():
             clips.append((act, n))
             print(f'clip {name}: {n} keys, {n * dt:.2f}s')
     if args.anim_preview and clips:
-        render_anim_sheet(args.anim_preview, rig, [body, eyes, shirt, pants, shoes, cap], clips)
+        render_anim_sheet(args.anim_preview, rig, objs, clips)
 
     if os.environ.get('MOSH_DEBUG'):
         debug_stats(body, pants, shirt)
 
     # ---- Preview
     if args.preview:
-        render_preview(args.preview, [body, eyes, shirt, pants, shoes, cap])
+        render_preview(args.preview, objs)
 
-    assign_materials([body, eyes, shirt, pants, shoes, cap])
-    for o in [body, eyes, shirt, pants, shoes, cap]:
+    for o in objs:
         o.select_set(True)
     rig.select_set(True)
     bpy.ops.export_scene.gltf(filepath=args.out, export_format='GLB', export_apply=False, export_skins=True,
                               export_animations=bool(clips), export_animation_mode='ACTIONS',
                               export_force_sampling=True, export_frame_step=1, export_yup=True,
-                              use_selection=True)
+                              use_selection=True, export_image_format='JPEG', export_jpeg_quality=88)
     print('exported', args.out)
+
+
+def landmarks(mesh, sk, P, jp):
+    def mean(ids):
+        return Vector(tuple(sum(to_blender(P[i])[k] for i in ids) / len(ids) for k in range(3)))
+    eye_l = mean(mesh.group_verts('helper-l-eye'))
+    eye_r = mean(mesh.group_verts('helper-r-eye'))
+    mouth = mean(mesh.group_verts('helper-upper-teeth') + mesh.group_verts('helper-lower-teeth'))
+    eyes_c = (eye_l + eye_r) / 2
+    head_c = eyes_c + Vector((0, 0.075, 0))
+    face = [Vector(to_blender(P[i])) for i in mesh.group_verts('body')]
+    face = [v for v in face if abs(v.x) < 0.012 and v.z > mouth.z - 0.08 and v.z < eyes_c.z + 0.02]
+    nose = min((v for v in face if v.z > mouth.z + 0.01), key=lambda v: v.y)
+    mouth_front = min((v for v in face if abs(v.z - mouth.z) < 0.012), key=lambda v: v.y)
+    mouth = Vector((0, mouth_front.y, mouth.z))
+    chin = min((v for v in face if v.y < mouth.y + 0.03), key=lambda v: v.z)
+    t = lambda v: tuple(v)  # noqa: E731
+    return {
+        'eye_l': t(eye_l), 'eye_r': t(eye_r), 'mouth': t(mouth), 'nose': t(nose), 'chin': t(chin),
+        'head_c': t(head_c),
+        'cheek_l': t(eye_l + Vector((0.012, 0, -0.032))), 'cheek_r': t(eye_r + Vector((-0.012, 0, -0.032))),
+        'ear_l': t(Vector((eyes_c.x + 0.075, head_c.y + 0.005, eyes_c.z - 0.012))),
+        'ear_r': t(Vector((eyes_c.x - 0.075, head_c.y + 0.005, eyes_c.z - 0.012))),
+        'chest_z': jp('spine01____head').z - 0.03,
+        'knee_z': jp('lowerleg01.L____head').z,
+        'ankle_z': jp('foot.L____head').z,
+    }
+
+
+def smart_unwrap(ob):
+    for o in bpy.context.view_layer.objects:
+        o.select_set(False)
+    ob.select_set(True)
+    bpy.context.view_layer.objects.active = ob
+    bpy.ops.object.mode_set(mode='EDIT')
+    bpy.ops.mesh.select_all(action='SELECT')
+    bpy.ops.uv.smart_project(angle_limit=math.radians(60), island_margin=0.01)
+    bpy.ops.object.mode_set(mode='OBJECT')
+
+
+LOOK = {'skin': (0.78, 0.56, 0.44), 'hair': (0.09, 0.06, 0.045), 'beard': 'full', 'buzz': True}
+
+
+def texture_all(size, lm, body, eyes, shirt, pants, shoes, cap):
+    for ob in (eyes, shirt, pants, shoes) + ((cap,) if cap else ()):
+        smart_unwrap(ob)
+    pos, nrm, ao, valid = tx.bake_maps(body, size)
+    tx.final_material(body, tx.paint_body(pos, nrm, ao, valid, lm, LOOK), 0.55)
+    pos, nrm, ao, valid = tx.bake_maps(eyes, 128, 8)
+    tx.final_material(eyes, tx.paint_eyes(pos, valid, lm), 0.15)
+    pos, nrm, ao, valid = tx.bake_maps(shirt, size)
+    tx.final_material(shirt, tx.paint_shirt(pos, nrm, ao, valid, lm, (0.035, 0.035, 0.04), 'HATEBREED'), 0.9)
+    pos, nrm, ao, valid = tx.bake_maps(pants, size // 2)
+    tx.final_material(pants, tx.paint_denim(pos, nrm, ao, valid, lm), 0.85)
+    pos, nrm, ao, valid = tx.bake_maps(shoes, size // 4)
+    tx.final_material(shoes, tx.paint_shoes(pos, nrm, ao, valid), 0.6)
+    if cap:
+        pos, nrm, ao, valid = tx.bake_maps(cap, size // 4)
+        tx.final_material(cap, tx.paint_cap(pos, nrm, ao, valid, (0.05, 0.05, 0.06), 'NY'), 0.7)
 
 
 def debug_stats(body, pants, shirt):
@@ -367,7 +506,6 @@ def assign_materials(objs):
 
 
 def setup_preview_scene(objs, res=720):
-    assign_materials(objs)
     scene = bpy.context.scene
     scene.render.engine = 'CYCLES'
     scene.cycles.samples = 12
@@ -418,7 +556,18 @@ def render_anim_sheet(path, rig, objs, clips, per_clip=6):
 
 
 def render_preview(path, objs):
-    assign_materials(objs)
+    if os.environ.get('MOSH_CAM') == 'face':
+        scene = setup_preview_scene(objs, res=640)
+        head = [o for o in objs if o.name == 'Body'][0]
+        top = max(v.co.z for v in head.data.vertices)
+        cam = scene.camera
+        cam.location = (0.22, -0.62, top - 0.1)
+        cam.rotation_euler = (math.radians(90), 0, math.radians(19))
+        cam.data.lens = 60
+        scene.cycles.samples = 32
+        scene.render.filepath = path
+        bpy.ops.render.render(write_still=True)
+        return
     scene = bpy.context.scene
     scene.render.engine = 'CYCLES'
     scene.cycles.samples = 24

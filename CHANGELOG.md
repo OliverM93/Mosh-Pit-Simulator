@@ -9,6 +9,9 @@ Versionierung nach [SemVer](https://semver.org/lang/de/) (vor 1.0 kann sich alle
 
 - Blender-Pipeline (headless) für echte Figuren aus MakeHuman (CC0) mit CMU-Motion-Capture; Prototyp-Modell und
   Dev-Viewer (`viewer.html`).
+- Texturen für die Blender-Figuren: Positions-/Normalen-/AO-Baking in Cycles, darauf gemalte Gesichtsdetails
+  (Augen mit Iris, Brauen, Lippen, Bart, Buzzcut), Jeansstoff mit Waschung, Shirt mit Print, Sneaker-Sohle.
+  Kleidung wird per Schnittebenen aus dem Körper geschnitten (saubere Säume/Kragen), Gewichte vom Körper übertragen.
 - Eigene Songs und Logos aus `public/user-content/` mit automatischer BPM-/Offset-Erkennung (noch ohne Doku).
 
 ### Hinzugefügt

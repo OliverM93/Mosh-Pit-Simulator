@@ -9,6 +9,10 @@ Kurz und praktisch. Nach jeder größeren Aufgabe aktualisieren (älteren Stand 
 
 ## Zuletzt erledigt
 
+- **Owner-Feedback nach dem Anspielen:** Synth-Musik schlecht (Originalmusik folgt), Takt-Drücken viel zu schnell,
+  echte Songs haben Tempowechsel → Rhythmus-Mechanik wird überdacht (Entscheidung offen). Grafik/Animationen
+  müssen deutlich besser und flüssiger werden.
+- Texturen + Gesichter für die Blender-Figur (`tools/blender/textures.py`), saubere Kleidungsschnitte.
 - **Figuren-Pipeline in Blender (D-025):** `tools/blender/` baut aus MakeHuman (CC0) + CMU-Mocap eine geskinnte
   Figur mit Spinkick/Cartwheel → `public/models/proto.glb`, Ansicht: `viewer.html`. Noch nicht im Spiel.
 - Eigene Songs (`public/user-content/songs.json`, Auto-BPM) – Code/Tests fertig, Browser-Test + Doku offen.
