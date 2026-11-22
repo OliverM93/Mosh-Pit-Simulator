@@ -62,9 +62,11 @@ export class MoveController {
   /** Pick the move for a category from the current situation (direction, speed). */
   resolve(category: MoveCategory, s: MoveSituation): MoveDefinition | null {
     const side = Math.abs(s.stickX) > MOVE_TUNING.sideDeadzone && Math.abs(s.stickX) > Math.abs(s.stickY);
+    const forward = s.stickY > MOVE_TUNING.sideDeadzone && s.stickY > Math.abs(s.stickX);
     for (const m of this.moves) {
       if (m.category !== category) continue;
       if (m.when?.side && !side) continue;
+      if (m.when?.forward && !forward) continue;
       if (m.when?.minSpeed !== undefined && s.speed < m.when.minSpeed) continue;
       return m;
     }
@@ -95,6 +97,21 @@ export class MoveController {
   press(category: MoveCategory, time: number, situation: MoveSituation): void {
     if (this.isBailing(time)) return;
     if (!this.tryStart(category, time, situation)) this.buffer = { category, situation, time };
+  }
+
+  /**
+   * Held button: start the next repetition the moment it is allowed (no buffering, no queue), so a held
+   * footwork/arms button turns into a continuous rhythm.
+   */
+  hold(category: MoveCategory, time: number, situation: MoveSituation): void {
+    if (this.isBailing(time) || this.buffer) return;
+    const def = this.resolve(category, situation);
+    if (!def?.repeatOnHold) return;
+    const running = def.layer === 'upper' ? this.upper : this.full;
+    if (running && running.def.category !== category) return;
+    if (running && !this.canCancel(running, category, time)) return;
+    if (!running && def.layer === 'upper' && this.full && this.full.def.category !== 'footwork') return;
+    this.tryStart(category, time, situation);
   }
 
   update(time: number, situation: MoveSituation): void {

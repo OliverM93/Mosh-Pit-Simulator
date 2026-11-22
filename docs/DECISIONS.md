@@ -7,6 +7,18 @@ Format: **Datum · Entscheidung** – Begründung · Betroffene Systeme · Alter
 
 ---
 
+### D-030 · 2026-11-22 · Kräftige Armbewegungen, Kreuz-2-Step, Halten = Rhythmus, Clips am Boden
+- **Anlass:** Owner-Feedback: Arme fehlen/zu schwach, 2-Step macht fast nichts, NPCs versinken im Boden, keine
+  flüssigen Combos.
+- **Entscheidung:** (1) Neue IK-Moves: Arm Swing (kraftvoller Rückwärtskreis, Oberkörper dreht mit, abwechselnd)
+  und Windmill nach vorn (Arms + Stick vorn), 2-Step mit Bein, das über das andere schwingt (mit Hop).
+  (2) Gehaltene Footwork-/Arms-Taste wiederholt den Move im Cancel-Fenster (`repeatOnHold`) → durchgehender
+  Rhythmus. (3) Cancel-Fenster von Kicks/Acro direkt nach der Landung → Combos gehen ohne Pause weiter.
+  (4) Jeder Clip wird beim Bauen gleichmäßig auf den Boden gesetzt (`settle_keys`): die alten Keyframe-Clips der
+  Pit-Tänzer sanken bis 20 cm ein, CMU-Clips schwebten ~10 cm. Tänzer nutzen jetzt die neuen Moves.
+- **Alternativen:** Zusätzliche Mocap für Arme (frei nicht verfügbar), Bodenkorrektur zur Laufzeit (teurer, nötig nur
+  bei Fehlern in den Daten).
+
 ### D-029 · 2026-11-22 · Feste Kamera Richtung Band; Animationen: Kampfhaltung, Pose-Matching, IK-Moves
 - **Anlass:** Owner-Feedback zum 2.0-Prototyp: Kamera nur auf zwei Achsen (immer Richtung Band); Grundhaltung
   unnatürlich, Animationen nicht flüssig, wirken nicht wie Combos.

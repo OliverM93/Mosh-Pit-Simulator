@@ -374,6 +374,8 @@ export class Game {
       }
     }
 
+    const held = [...input.held].filter((a): a is MoveCategory => MOVE_BUTTONS.has(a));
+
     // Sub-step at 60 Hz; song time interpolated across sub-steps.
     const steps = Math.max(1, Math.ceil(dt / SUBSTEP - 1e-6));
     const from = Math.min(this.lastSongTime, songTime);
@@ -385,6 +387,7 @@ export class Game {
         stickY: playing ? input.moveY : 0,
         sprint: input.sprint,
         presses: i === 1 ? presses : [],
+        held: playing ? held : [],
       };
       s.update(dt / steps, from + ((songTime - from) * i) / steps, frameInput);
     }

@@ -7,6 +7,10 @@ Versionierung nach [SemVer](https://semver.org/lang/de/) (vor 1.0 kann sich alle
 
 ### MOSH PIT 2.0 – Prototyp (Branch `claude/mosh-pit-2-prototype`, D-028)
 
+- Neue Armbewegungen (D-030): Arm Swing (kraftvoller Rückwärtskreis, abwechselnd, Oberkörper dreht mit) und
+  Windmill nach vorn (Arms + vorwärts); 2-Step neu mit Bein, das über das andere schwingt.
+- Halten von Footwork/Arms = durchgehender Rhythmus; Kicks/Acro sind direkt nach der Landung abbrechbar.
+- Behoben: Pit-Tänzer versanken im Boden (alle Clips werden beim Bauen auf den Boden gesetzt).
 - Kamera immer Richtung Band, bewegt sich nur mit dem Spieler (D-029).
 - Neue Grundhaltung (Kampfhaltung aus Mocap), Fortbewegung Swagger → Run → Dash aus dem Bandai-Namco-Datensatz
   (CC BY-NC 4.0), saubere Loops; alle Moves starten/enden in der Grundhaltung → Combos gehen nahtlos ineinander.

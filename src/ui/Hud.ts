@@ -135,7 +135,7 @@ export class Hud {
     const c = s.combo;
     if (c.active) {
       const names = c.entries.map((e) => e.name.toUpperCase());
-      const shown = names.length > 6 ? ['…', ...names.slice(-6)] : names;
+      const shown = names.length > 4 ? ['…', ...names.slice(-4)] : names;
       this.set(this.comboMoves, shown.join(' + '));
       this.set(this.comboScore, `${formatScore(c.base)} × ${Math.max(1, c.multiplier)}`);
     } else {

@@ -41,10 +41,10 @@ Die Kamera schaut immer Richtung Bühne – „hoch“ heißt „zur Band“.
 | ------------------------- | ---------------------- | ------------- |
 | Laufen                    | WASD                   | linker Stick  |
 | Sprint / Anlauf           | Shift                  | RT / LT       |
-| Footwork (2-Step)         | Q                      | X             |
-| Arms (Windmill, auch im Laufen/2-Step) | E         | Y             |
+| Footwork: 2-Step (halten = weiter) | Q             | X             |
+| Arms: Arm Swing / mit vorwärts Windmill (halten = weiter) | E | Y |
 | Kick: Spinkick / mit Anlauf Tornado Kick | R       | B             |
-| Acro: Butterfly Kick / seitlich Cartwheel | Space  | A             |
+| Acro: Butterfly Kick / seitlich Rad (Cartwheel) | Space | A        |
 | Move-Liste ein/aus        | H                      | Back          |
 | Pause                     | Esc / P                | Start         |
 

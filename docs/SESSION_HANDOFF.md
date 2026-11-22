@@ -9,6 +9,9 @@ alten Stand bleibt; dessen PR gegen `main` wartet weiter auf Freigabe). Kein PR 
 
 ## Zuletzt erledigt
 
+- **D-030:** Arm Swing + Windmill (vorwärts) neu, 2-Step mit kreuzendem Bein, Halten = Rhythmus, frühere
+  Cancel-Fenster, alle Clips auf den Boden gesetzt (NPCs versinken nicht mehr). 7 Moves, 43 Tests.
+
 - **Owner-Feedback umgesetzt (D-029):** feste Kamera Richtung Band; Animationen neu: Kampfhaltung + Swagger/Run/Dash
   (Bandai-Mocap, CC BY-NC), Pose-Matching aller Moves auf die Grundhaltung, 2-Step/Windmill per IK
   (`tools/blender/authoring.py`), Locomotion-Mischung über vier Stufen. Viewer: `viewer.html?clip=two_step&cam=back`.

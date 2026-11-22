@@ -24,7 +24,8 @@ describe('MoveController', () => {
     expect(mc.resolve('acro', SIDE)?.id).toBe('cartwheel');
     expect(mc.resolve('acro', STILL)?.id).toBe('butterfly_kick');
     expect(mc.resolve('footwork', SPRINT)?.id).toBe('two_step');
-    expect(mc.resolve('arms', STILL)?.layer).toBe('upper');
+    expect(mc.resolve('arms', STILL)?.id).toBe('arm_swing');
+    expect(mc.resolve('arms', SPRINT)?.id).toBe('windmill');
   });
 
   it('layers arms over footwork', () => {
@@ -32,7 +33,7 @@ describe('MoveController', () => {
     mc.press('footwork', 0, STILL);
     mc.press('arms', 0.05, STILL);
     expect(mc.full?.def.id).toBe('two_step');
-    expect(mc.upper?.def.id).toBe('windmill');
+    expect(mc.upper?.def.id).toBe('arm_swing');
     expect(mc.upper?.layered).toBe(true);
   });
 
@@ -84,5 +85,20 @@ describe('MoveController', () => {
     mc.press('kick', 0.5, STILL);
     expect(mc.full).toBeNull();
     expect(mc.isBailing(0.5)).toBe(true);
+  });
+
+  it('repeats held footwork as soon as the cancel window opens (continuous rhythm)', () => {
+    const mc = new MoveController(MOVES);
+    const step = getMove('two_step');
+    mc.press('footwork', 0, STILL);
+    mc.drain();
+    const starts: number[] = [];
+    for (let t = 0; t < step.duration * 3; t += 1 / 120) {
+      mc.hold('footwork', t, STILL);
+      mc.update(t, STILL);
+      for (const e of mc.drain()) if (e.type === 'start') starts.push(e.move.startTime);
+    }
+    expect(starts.length).toBeGreaterThanOrEqual(3);
+    expect(starts[0]).toBeCloseTo(step.duration * step.cancelFrom, 1);
   });
 });

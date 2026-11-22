@@ -43,6 +43,8 @@ export interface FrameInput {
   stickY: number;
   sprint: boolean;
   presses: MovePress[];
+  /** Move buttons held down (hold-to-repeat moves). */
+  held?: MoveCategory[];
 }
 
 export const SESSION_TUNING = {
@@ -108,6 +110,7 @@ export class PitSession {
 
     const situation: MoveSituation = { stickX: input.stickX, stickY: input.stickY, speed: this.movement.speed };
     for (const p of [...input.presses].sort((a, b) => a.time - b.time)) this.moves.press(p.category, p.time, situation);
+    for (const c of input.held ?? []) this.moves.hold(c, songTime, situation);
     this.moves.update(songTime, situation);
     // Handlers can raise follow-up events (a crash bail on start) – drain until quiet.
     for (let batch = this.moves.drain(); batch.length; batch = this.moves.drain()) {

@@ -211,9 +211,10 @@ def retarget(rig, bvh_path, start, end, name, *, step=4, in_place=True, keep_yaw
         keys.append((world_to_local(bones, order, rest, world), desired))
 
     keys = postprocess(keys, loop=loop, match=match)
+    keys = settle_keys(rig, keys)
     if register:
         POSES[register] = keys[0]
-    write_action(rig, name, keys)
+    write_action(rig, name, keys, settle=False)
     return bpy.data.actions[name], len(keys), b.frame_time * step
 
 
@@ -276,8 +277,65 @@ def postprocess(keys, loop=None, match=None):
     return keys
 
 
-def write_action(rig, name, keys):
+class Skeleton:
+    """FK on local pose quaternions (same convention as world_to_local)."""
+
+    def __init__(self, rig):
+        self.bones = rig.data.bones
+        self.order = [b.name for b in self.bones]
+        self.rest = {b.name: b.matrix_local.to_3x3() for b in self.bones}
+        self.rest_head = {b.name: b.head_local.copy() for b in self.bones}
+
+    def fk(self, local, root_pos):
+        world, head = {}, {}
+        for n in self.order:
+            b = self.bones[n]
+            q = local[n].to_matrix()
+            if b.parent is None:
+                world[n] = self.rest[n] @ q
+                head[n] = root_pos.copy()
+            else:
+                p = b.parent.name
+                world[n] = world[p] @ (self.rest[p].inverted() @ self.rest[n]) @ q
+                head[n] = head[p] + world[p] @ (self.rest[p].inverted() @ (self.rest_head[n] - self.rest_head[p]))
+        return world, head
+
+    def set_world(self, local, world, n, w_new):
+        """Change one bone's world rotation (its children follow on the next fk)."""
+        b = self.bones[n]
+        if b.parent is None:
+            local[n] = (self.rest[n].inverted() @ w_new).to_quaternion()
+        else:
+            p = b.parent.name
+            local_rest = self.rest[p].inverted() @ self.rest[n]
+            local[n] = (local_rest.inverted() @ world[p].inverted() @ w_new).to_quaternion()
+
+    def lowest(self, local, root_pos):
+        """How far the body is above its floor clearance (negative = sinks into the floor)."""
+        world, head = self.fk(local, root_pos)
+        low = math.inf
+        for n, clear in FLOOR_JOINTS.items():
+            c = self.rest_head[n].z * 0.9 if clear is None else clear
+            low = min(low, head[n].z - c)
+        for n, clear in FLOOR_TAILS.items():
+            b = self.bones[n]
+            tail = head[n] + world[n] @ (self.rest[n].inverted() @ (b.tail_local - b.head_local))
+            low = min(low, tail.z - clear)
+        return low
+
+
+def settle_keys(rig, keys):
+    """Shift the whole clip vertically so its lowest contact touches the floor (no sinking, no hovering).
+    Uniform per clip, so jumps keep their height."""
+    sk = Skeleton(rig)
+    low = min(sk.lowest(q, r) for q, r in keys)
+    return [(q, r - Vector((0, 0, low))) for q, r in keys]
+
+
+def write_action(rig, name, keys, settle=True):
     """Keyframe local quaternions + root position (armature space) as a muted NLA strip."""
+    if settle:
+        keys = settle_keys(rig, keys)
     action = bpy.data.actions.new(name)
     action.use_fake_user = True
     rig.animation_data_create()
@@ -384,7 +442,7 @@ def _euler3(x, y, z, order):
     return rx @ ry @ rz if order == 'XYZ' else ry @ rx @ rz  # three.js convention
 
 
-def retarget_keyframes(rig, data, clip_id, name, *, mirror=False):
+def retarget_keyframes(rig, data, clip_id, name, *, mirror=False, settle=True):
     """Retarget one sampled clip of the old box rig (three.js Euler conventions, Y-up) onto the skeleton."""
     from bvhreader import AXIS, AXIS_INV
     root_names = data['root']
@@ -405,16 +463,8 @@ def retarget_keyframes(rig, data, clip_id, name, *, mirror=False):
         sdir = (AXIS @ Vector(KEY_REST_DIR[src])).normalized()
         ref[tgt] = tdir.rotation_difference(sdir).to_matrix() @ rest[tgt]
     scale = rest_head['root'].z / OLD_HIP_HEIGHT
-
-    action = bpy.data.actions.new(name)
-    action.use_fake_user = True
-    rig.animation_data_create()
-    rig.animation_data.action = action
-    pbs = rig.pose.bones
-    for pb in pbs:
-        pb.rotation_mode = 'QUATERNION'
     order = [bn.name for bn in bones]
-    prev_q = {}
+    keys = []
     for k, f in enumerate(frames):
         rootv = dict(zip(root_names, f[:len(root_names)]))
         local = {}
@@ -435,32 +485,11 @@ def retarget_keyframes(rig, data, clip_id, name, *, mirror=False):
                 parent_w = world[bn.parent.name] if bn.parent else Matrix.Identity(3)
                 parent_r = rest[bn.parent.name] if bn.parent else Matrix.Identity(3)
                 world[bn_name] = parent_w @ parent_r.inverted() @ rest[bn_name]
-        for bn_name in order:
-            bn = bones[bn_name]
-            pb = pbs[bn_name]
-            if bn.parent:
-                loc_rest = rest[bn.parent.name].inverted() @ rest[bn_name]
-                m = loc_rest.inverted() @ world[bn.parent.name].inverted() @ world[bn_name]
-            else:
-                m = rest[bn_name].inverted() @ world[bn_name]
-            q = m.to_quaternion()
-            pq = prev_q.get(bn_name)
-            if pq is not None and pq.dot(q) < 0:
-                q.negate()
-            prev_q[bn_name] = q
-            pb.rotation_quaternion = q
-            pb.keyframe_insert('rotation_quaternion', frame=k + 1)
         off = AXIS @ Vector((rootv['x'], rootv['y'], rootv['z'])) * scale
-        pbs['root'].location = rest['root'].inverted() @ off
-        pbs['root'].keyframe_insert('location', frame=k + 1)
-    track = rig.animation_data.nla_tracks.new()
-    track.name = name
-    track.strips.new(name, 1, action)
-    rig.animation_data.action = None
-    for pb in pbs:
-        pb.rotation_quaternion = Quaternion()
-        pb.location = Vector()
-    return action, len(frames)
+        keys.append((world_to_local(bones, order, rest, world), rest_head['root'] + off))
+    keys = postprocess(keys)
+    write_action(rig, name, keys, settle=settle)
+    return bpy.data.actions[name], len(keys)
 
 
 def _mirror_pose(f, root_names, joints):

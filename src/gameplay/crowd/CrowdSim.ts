@@ -399,10 +399,10 @@ export class CrowdSim {
       let pulses = 1;
       const roll = r.next();
       if (a.role === 'ninja' && roll < 0.3 + ctx.energy * 0.25) {
-        clip = r.pick(['spinkick', 'spinkick', 'floorwork', 'side_arms']);
+        clip = r.pick(['spinkick', 'high_kick', 'floorwork', 'windmill']);
         pulses = Math.max(1, Math.round(0.7 / ctx.pulseInterval));
       } else if (roll < 0.25 + ctx.energy * 0.2) {
-        clip = r.pick(['forward_arms', 'side_arms', 'pick_up_change']);
+        clip = r.pick(['arm_swing', 'arm_swing', 'windmill']);
         pulses = Math.max(1, Math.round(0.7 / ctx.pulseInterval));
       }
       a.mirror = clip === a.clip ? !a.mirror : r.chance(0.5);

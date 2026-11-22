@@ -12,16 +12,20 @@ Eine Taste pro Kategorie, Richtung und Tempo wählen den Move (erste passende De
 
 | Taste (Tastatur / Pad) | Bedingung | Move | Ebene | Dauer | Basis | Luftphase | Cancel ab |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| Footwork (Q / X) | – | 2-Step | full | 0,46 s | 50 | – | 70 % |
-| Arms (E / Y) | – | Windmill Arms | upper | 0,90 s | 100 | – | 50 % |
-| Kick (R / B) | Tempo ≥ 4 m/s | Tornado Kick | full | 1,05 s | 600 | 29–79 % | 86 % |
-| Kick (R / B) | sonst | Spinkick | full | 0,85 s | 300 | 30–70 % | 76 % |
-| Acro (Space / A) | Stick seitlich | Cartwheel | full | 1,15 s | 450 | 27–73 % | 80 % |
-| Acro (Space / A) | sonst | Butterfly Kick | full | 1,15 s | 700 | 29–71 % | 82 % |
+| Footwork (Q / X) | – | 2-Step (Halten = weiter steppen) | full | 0,48 s | 50 | – | 62 % |
+| Arms (E / Y) | Stick nach vorn | Windmill (Halten = weiter) | upper | 0,85 s | 120 | – | 50 % |
+| Arms (E / Y) | sonst | Arm Swing (Halten = abwechselnd) | upper | 0,55 s | 90 | – | 60 % |
+| Kick (R / B) | Tempo ≥ 4 m/s | Tornado Kick | full | 1,05 s | 600 | 29–79 % | 80 % |
+| Kick (R / B) | sonst | Spinkick | full | 0,85 s | 300 | 30–70 % | 72 % |
+| Acro (Space / A) | Stick seitlich | Cartwheel (Rad) | full | 1,15 s | 450 | 27–73 % | 75 % |
+| Acro (Space / A) | sonst | Butterfly Kick | full | 1,15 s | 700 | 29–71 % | 73 % |
 
 - **Ebenen:** Arms (`upper`) laufen über Laufen und 2-Step („LAYERED“). Während Kick/Acro wird Arms gepuffert.
 - **Cancel-Fenster:** ab „Cancel ab“ darf der nächste Move den laufenden abbrechen (alle Kategorien erlaubt).
 - **Puffer:** Ein Druck bis 0,3 s vor dem Fenster startet genau beim Öffnen; frühere Drücke verfallen.
+- **Halten (`repeatOnHold`):** gehaltene Footwork-/Arms-Taste startet die nächste Wiederholung, sobald das
+  Cancel-Fenster öffnet (abwechselnde Seiten) – ein durchgehender Rhythmus. Kicks/Acro öffnen ihr Fenster direkt
+  nach der Landung.
 - **Clean Link:** Start im Cancel-Fenster oder bis 0,25 s nach dem Ende des vorherigen Moves.
 - **Phasen:** Absprung → Luft → Landung. Kicks/Acro werden erst bei der Landung gewertet.
 

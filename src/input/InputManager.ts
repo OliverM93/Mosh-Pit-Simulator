@@ -15,6 +15,8 @@ export interface InputFrame {
   lookX: number;
   lookY: number;
   sprint: boolean;
+  /** Actions whose button is held down right now (hold-to-repeat moves). */
+  held: Set<ButtonAction>;
   events: ButtonEvent[];
 }
 
@@ -77,6 +79,8 @@ export class InputManager {
     let mx = (this.any(KEYBOARD_AXES.right) ? 1 : 0) - (this.any(KEYBOARD_AXES.left) ? 1 : 0);
     let my = (this.any(KEYBOARD_AXES.up) ? 1 : 0) - (this.any(KEYBOARD_AXES.down) ? 1 : 0);
     let sprint = this.any(KEYBOARD_AXES.sprint);
+    const held = new Set<ButtonAction>();
+    for (const code of this.down) for (const action of KEYBOARD_BUTTONS[code] ?? []) held.add(action);
     let lx = this.mouseDX * this.mouseSensitivity;
     let ly = this.mouseDY * this.mouseSensitivity * (this.invertY ? -1 : 1);
     this.mouseDX = this.mouseDY = 0;
@@ -87,6 +91,7 @@ export class InputManager {
       const now = pad.buttons.map((b) => b.pressed);
       const time = pad.timestamp > 0 ? pad.timestamp : performance.now();
       now.forEach((pressed, i) => {
+        if (pressed) for (const action of GAMEPAD_BUTTONS[i] ?? []) held.add(action);
         if (pressed && !prev[i]) {
           this.lastDevice = 'gamepad';
           for (const action of GAMEPAD_BUTTONS[i] ?? []) this.events.push({ action, time, device: 'gamepad' });
@@ -116,6 +121,6 @@ export class InputManager {
     }
     const events = this.events.sort((a, b) => a.time - b.time);
     this.events = [];
-    return { moveX: mx, moveY: my, lookX: lx, lookY: ly, sprint, events };
+    return { moveX: mx, moveY: my, lookX: lx, lookY: ly, sprint, held, events };
   }
 }

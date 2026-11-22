@@ -446,7 +446,7 @@ def main():
             data = json.load(f)
         for cid, mirrored in KEY_CLIPS:
             for m in ([False, True] if mirrored else [False]):
-                act, n = retarget_keyframes(rig, data, cid, cid + ('_m' if m else ''), mirror=m)
+                act, n = retarget_keyframes(rig, data, cid, cid + ('_m' if m else ''), mirror=m, settle=cid != 'surf')
                 clips.append((act, n))
         print(f'keyframe clips: {len(KEY_CLIPS)}')
     if args.anim_preview and clips:
@@ -660,7 +660,7 @@ def export_anims(args, rig):
             data = json.load(f)
         for cid, mirrored in KEY_CLIPS:
             for m in ([False, True] if mirrored else [False]):
-                retarget_keyframes(rig, data, cid, cid + ('_m' if m else ''), mirror=m)
+                retarget_keyframes(rig, data, cid, cid + ('_m' if m else ''), mirror=m, settle=cid != 'surf')
     for o in bpy.context.view_layer.objects:
         o.select_set(False)
     rig.select_set(True)

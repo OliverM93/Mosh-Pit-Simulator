@@ -24,6 +24,8 @@ export interface MoveDefinition {
   when?: {
     /** Stick held mostly sideways. */
     side?: boolean;
+    /** Stick held mostly forward (towards the band). */
+    forward?: boolean;
     /** Minimum ground speed (run-up). */
     minSpeed?: number;
   };
@@ -34,6 +36,8 @@ export interface MoveDefinition {
   clipRange: [number, number];
   /** Mirror on every second consecutive use (alternating sides). */
   alternate?: boolean;
+  /** Holding the button keeps repeating the move as soon as its cancel window opens (rhythmic footwork/arms). */
+  repeatOnHold?: boolean;
   /** Airborne between these normalised progress values (takeoff → flight → landing). */
   air?: { takeoff: number; land: number };
   /** From this progress on the move can be cancelled into the listed categories. */
