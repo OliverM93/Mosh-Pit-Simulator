@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import * as SkeletonUtils from 'three/addons/utils/SkeletonUtils.js';
+import { AnimationController } from './AnimationController';
 import { applyPS1 } from './ps1';
 
 /**
@@ -61,6 +62,12 @@ export class CharacterLibrary {
 
   has(id: string): boolean {
     return this.variants.has(id);
+  }
+
+  /** Player character with layered animation (body halves). */
+  createLayered(id: string): AnimationController {
+    const t = this.variants.get(id) ?? this.variants.get(PLAYER_VARIANT)!;
+    return new AnimationController(SkeletonUtils.clone(t.scene), t.clips);
   }
 
   create(id: string): SkinnedCharacter {

@@ -5,9 +5,9 @@ export const VENUES: VenueDefinition[] = [
     id: 'basement',
     name: 'The Basement',
     description: 'Sweaty cellar under a closed laundromat. Low ceiling, tiny stage, zero personal space.',
-    room: { width: 13, depth: 13, height: 3.0 },
+    room: { width: 14, depth: 14, height: 3.0 },
     stage: { width: 6.5, depth: 2.6, height: 0.35 },
-    pit: { x: 0, z: 0.4, radius: 3.0 },
+    pit: { x: 0, z: 0.6, radius: 3.7 },
     crowd: { watchers: 58, dancers: 3, ninjas: 2, surfers: 1, seed: 1337 },
     look: {
       fog: 0x120b14,

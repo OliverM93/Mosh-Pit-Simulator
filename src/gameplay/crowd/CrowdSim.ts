@@ -68,7 +68,7 @@ export const CROWD_TUNING = {
   homeDamping: 6,
   dancerSpeed: 1.3,
   /** Watchers push the player back into the pit with this strength. */
-  wallPush: 0.65,
+  wallPush: 0.35,
   surferSpeed: 0.85,
   surferHeight: 1.85,
 };

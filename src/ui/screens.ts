@@ -1,9 +1,7 @@
 import { clamp, formatScore } from '../core/math';
 import { MOVES } from '../data/moves';
-import { NAMED_COMBOS } from '../data/comboBonuses';
 import type { SongDefinition } from '../audio/songTypes';
-import type { SessionStats } from '../gameplay/ComboSystem';
-import { MODES, type GameModeDefinition } from '../gameplay/modes';
+import type { ComboStats } from '../gameplay/ComboManager';
 import { GRAPHICS_ORDER, GRAPHICS_PRESETS } from '../data/graphics';
 import type { Settings } from '../save/SaveSystem';
 import { el, MenuScreen } from './Menu';
@@ -14,7 +12,7 @@ export function titleScreen(onStart: () => void): MenuScreen {
     el('div', 'logo', 'MOSH<br>PIT'),
     el('div', 'subtitle', 'HARDCORE ARCADE SIMULATOR'),
     el('div', 'blink', 'PRESS ANY KEY'),
-    el('div', 'footnote', 'Prototype · Phase 1 · placeholder songs are synthesised in-game, not recordings by the bands named on shirts and flyers'),
+    el('div', 'footnote', 'Prototype 2.0 · placeholder test song synthesised in-game'),
   );
   s.onAny = () => onStart();
   s.el.addEventListener('click', () => onStart());
@@ -34,75 +32,45 @@ export function messageScreen(title: string, html: string, onBack?: () => void):
   return s;
 }
 
-export function mainMenu(onMode: (m: GameModeDefinition) => void, onSettings: () => void, onHelp: () => void): MenuScreen {
+export function mainMenu(onPlay: () => void, onSettings: () => void, onHelp: () => void): MenuScreen {
   const s = new MenuScreen();
   s.el.append(el('div', 'logo', 'MOSH PIT'), el('div', 'subtitle', ' '));
   const menu = el('div', 'menu');
-  for (const m of MODES) {
-    const b = el('button', '', `${m.name.toUpperCase()}${m.available ? '' : '<span class="meta">SOON</span>'}<span class="desc">${m.description}</span>`);
-    s.add({ el: b, disabled: !m.available, activate: () => onMode(m) });
+  const items: [string, () => void][] = [
+    ['HIT THE PIT<span class="desc">One song. Chain moves, keep the combo alive, bank big.</span>', onPlay],
+    ['HOW TO PLAY', onHelp],
+    ['SETTINGS', onSettings],
+  ];
+  for (const [label, fn] of items) {
+    const b = el('button', '', label);
+    s.add({ el: b, activate: fn });
     menu.appendChild(b);
   }
-  const help = el('button', '', 'HOW TO PLAY');
-  s.add({ el: help, activate: onHelp });
-  const settings = el('button', '', 'SETTINGS');
-  s.add({ el: settings, activate: onSettings });
-  menu.append(help, settings);
   s.el.appendChild(menu);
-  return s;
-}
-
-export function songSelect(
-  songs: SongDefinition[],
-  mode: GameModeDefinition,
-  venueName: string,
-  best: (songId: string) => number,
-  onPick: (song: SongDefinition) => void,
-  onBack: () => void,
-): MenuScreen {
-  const s = new MenuScreen();
-  s.el.append(el('h1', 'screen-title', `${mode.name.toUpperCase()} · PICK A SONG`), el('div', 'subtitle', `VENUE: ${venueName.toUpperCase()}`));
-  const menu = el('div', 'menu');
-  menu.style.marginTop = '20px';
-  for (const song of songs) {
-    const hi = best(song.id);
-    const b = el(
-      'button',
-      '',
-      `${song.audio.kind === 'file' ? '★ ' : ''}${song.title.toUpperCase()}<span class="meta">${song.bpm ? `${song.bpm} BPM` : 'AUTO BPM'} · ${song.genre.toUpperCase()}</span>` +
-        `<span class="desc">${song.artist} — ${song.blurb}${hi > 0 ? ` · BEST ${formatScore(hi)}` : ''}</span>`,
-    );
-    s.add({ el: b, activate: () => onPick(song) });
-    menu.appendChild(b);
-  }
-  const back = el('button', '', 'BACK');
-  s.add({ el: back, activate: onBack });
-  menu.appendChild(back);
-  s.el.appendChild(menu);
-  s.onBack = onBack;
   return s;
 }
 
 export function helpScreen(onBack: () => void): MenuScreen {
   const s = new MenuScreen();
   s.el.appendChild(el('h1', 'screen-title', 'HOW TO PLAY'));
-  const rows = MOVES.map((m) => `<tr><td>${m.hint}</td><td>${m.name}</td><td>${m.score} pts${m.link ? ' · link move' : ''}</td></tr>`).join('');
-  const named = NAMED_COMBOS.map((n) => `<tr><td>${n.name}</td><td colspan="2">${n.sequence.map((id) => MOVES.find((m) => m.id === id)?.name).join(' → ')} (+${n.bonus})</td></tr>`).join('');
+  const rows = MOVES.map((m) => `<tr><td>${m.category.toUpperCase()}</td><td>${m.name}</td><td>${m.hint} · ${m.points} pts</td></tr>`).join('');
   s.el.append(
     el(
       'div',
       'panel',
-      `<h3>THE PIT</h3>WASD move · Mouse look (click to lock) · Shift sprint · Q/E/R/F + direction = moves · Space jump, then R/F in the air.<br>
-       Gamepad: left stick move · right stick look · RT sprint · X / Y / B / RB moves · A jump.<br>
-       <h3>GROOVE</h3>Moves flow at their natural speed – mash, link and mix them. Landing a move ON THE BEAT (ticks meet in the diamond) is a bonus: more points and a bigger multiplier. Being off the beat costs nothing.
-       Breakdowns and heavy parts double kicks, floorwork and air moves. Hit a big move right on the DROP for a huge bonus.
-       <h3>RISK</h3>Big moves need room. Throw a kick into a packed crowd and you <b>crash</b>: the whole combo is gone.
-       <h3>COMBOS</h3>Chain moves without pausing – each one grows the multiplier. A short pause banks the combo (pool × multiplier).
-       Repeating the same move pays less and less, mixing move styles pays a bonus. Fill the HYPE meter for a PIT FRENZY (x2).
-       Big moves need space: the ring under you turns red when the crowd is too close.`,
+      `<h3>CONTROLS</h3>Keyboard: WASD run · Shift sprint · <b>Q</b> footwork · <b>E</b> arms · <b>R</b> kick · <b>Space</b> acro · mouse look (click to lock) · H move list.<br>
+       Gamepad: left stick run · RT sprint · <b>X</b> footwork · <b>Y</b> arms · <b>B</b> kick · <b>A</b> acro · right stick look.<br>
+       <h3>MOVES</h3>One button per style – direction and speed pick the move: kick with a run-up becomes a Tornado Kick,
+       acro to the side is a Cartwheel. Arms can be thrown on top of running and 2-stepping (LAYERED bonus).
+       <h3>COMBOS</h3>Every move adds points and +1 multiplier. The bar under the combo is your timer: each move refills it,
+       when it runs out the combo is banked (points × multiplier × variety). Chain moves right as the previous one finishes
+       (CLEAN), carry speed into big moves (MOMENTUM), land clean. Repeating the same move pays less and less.
+       <h3>MUSIC</h3>You can move any time. Starting a move on the beat, during breakdowns (x1.5) and heavy parts (x2) and right on
+       the DROP pays extra.
+       <h3>RISK</h3>Big moves need room – the ring under you turns red near the crowd. Kick into a packed crowd and you bail:
+       the running combo is lost.`,
     ),
     el('div', 'panel', `<table>${rows}</table>`),
-    el('div', 'panel', `<h3>SIGNATURE COMBOS</h3><table>${named}</table>`),
   );
   const back = el('button', '', 'BACK');
   s.add({ el: back, activate: onBack });
@@ -170,7 +138,7 @@ export function settingsScreen(settings: Settings, onChange: (patch: Partial<Set
   const back = el('button', '', 'BACK');
   s.add({ el: back, activate: onBack });
   menu.appendChild(back);
-  s.el.append(menu, el('div', 'panel', 'AUDIO OFFSET: if your PERFECTs feel early or late, nudge this. Positive = the game expects your press later.'));
+  s.el.append(menu, el('div', 'panel', 'AUDIO OFFSET: if ON BEAT bonuses feel early or late, nudge this. Positive = the game expects your press later.'));
   s.onBack = onBack;
   return s;
 }
@@ -198,39 +166,36 @@ export function pauseScreen(onResume: () => void, onRestart: () => void, onSetti
 export interface ResultData {
   song: SongDefinition;
   score: number;
-  stats: SessionStats;
+  stats: ComboStats;
   newHighscore: boolean;
   previousBest: number;
 }
 
-/** Letter grade from on-beat share, combo length and crashes (groove model). */
-export function grade(stats: SessionStats): string {
+/** Letter grade from score, longest combo and bails. */
+export function grade(score: number, stats: ComboStats): string {
   if (stats.moves === 0) return 'D';
-  const onBeat = (stats.ratings.perfect + stats.ratings.good) / stats.moves;
-  if (onBeat >= 0.55 && stats.bails === 0 && stats.longestCombo >= 15) return 'S';
-  if (onBeat >= 0.4 && stats.bails <= 1) return 'A';
-  if (onBeat >= 0.25 && stats.bails <= 3) return 'B';
-  if (onBeat >= 0.12) return 'C';
+  if (score >= 250000 && stats.bails === 0) return 'S';
+  if (score >= 120000 && stats.bails <= 1) return 'A';
+  if (score >= 50000) return 'B';
+  if (score >= 15000) return 'C';
   return 'D';
 }
 
-export function resultsScreen(r: ResultData, onRetry: () => void, onSongs: () => void, onMenu: () => void): MenuScreen {
+export function resultsScreen(r: ResultData, onRetry: () => void, onMenu: () => void): MenuScreen {
   const s = new MenuScreen();
   const st = r.stats;
   s.el.appendChild(el('h1', 'screen-title', `${r.song.title.toUpperCase()} — SET OVER`));
-  s.el.appendChild(el('div', 'grade', grade(st)));
+  s.el.appendChild(el('div', 'grade', grade(r.score, st)));
   if (r.newHighscore) s.el.appendChild(el('div', 'new-hi', 'NEW HIGHSCORE!'));
-  const acc = st.moves ? Math.round(((st.ratings.perfect + st.ratings.good) / st.moves) * 100) : 0;
   const rows: [string, string][] = [
     ['FINAL SCORE', formatScore(r.score)],
     ['PREVIOUS BEST', formatScore(r.previousBest)],
     ['BEST COMBO', formatScore(st.bestCombo)],
     ['LONGEST COMBO', `${st.longestCombo} MOVES`],
+    ['COMBOS BANKED', `${st.combos}`],
     ['MOVES', `${st.moves}`],
-    ['ON BEAT / GOOD / OKAY', `${st.ratings.perfect} / ${st.ratings.good} / ${st.ratings.okay}`],
-    ['CRASHES', `${st.bails}`],
-    ['DROP HITS', `${st.dropHits}`],
-    ['ON-BEAT SHARE', `${acc}%`],
+    ['CLEAN LINKS', `${st.cleanLinks}`],
+    ['BAILS', `${st.bails}`],
   ];
   const grid = el('div', 'results');
   for (const [k, v] of rows) grid.append(el('div', '', k), el('div', 'v', v));
@@ -238,7 +203,6 @@ export function resultsScreen(r: ResultData, onRetry: () => void, onSongs: () =>
   const menu = el('div', 'menu');
   for (const [label, fn] of [
     ['PLAY AGAIN', onRetry],
-    ['OTHER SONG', onSongs],
     ['MAIN MENU', onMenu],
   ] as const) {
     const b = el('button', '', label);

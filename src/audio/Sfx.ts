@@ -1,6 +1,5 @@
 import type { AudioEngine } from './AudioEngine';
 import { midiToHz } from './AudioEngine';
-import type { Rating } from '../gameplay/timing';
 
 /**
  * Synthesised sound effects and crowd ambience. Everything is generated at
@@ -67,18 +66,13 @@ export class Sfx {
     this.tone(990, c.currentTime + 0.06, 0.1, 'square', 0.1);
   }
 
-  rating(r: Rating): void {
+  /** Short chime for a move that earned bonus tags (on beat / clean link). */
+  bonusTag(strong: boolean): void {
     const c = this.ctx;
     if (!c) return;
     const t = c.currentTime;
-    if (r === 'perfect') {
-      this.tone(1318, t, 0.08, 'square', 0.09);
-      this.tone(1760, t + 0.05, 0.12, 'square', 0.08);
-    } else if (r === 'good') {
-      this.tone(1046, t, 0.08, 'square', 0.07);
-    } else if (r === 'okay') {
-      this.tone(784, t, 0.05, 'triangle', 0.06);
-    }
+    this.tone(strong ? 1318 : 1046, t, 0.07, 'square', 0.06);
+    if (strong) this.tone(1760, t + 0.05, 0.1, 'square', 0.05);
   }
 
   whoosh(strength: number): void {

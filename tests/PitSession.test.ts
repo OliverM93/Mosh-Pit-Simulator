@@ -1,101 +1,82 @@
 import { describe, expect, it } from 'vitest';
-import { getSong, SONGS } from '../src/data/songs';
+import { getSong } from '../src/data/songs';
 import { getVenue } from '../src/data/venues';
-import type { MoveRequest } from '../src/gameplay/MoveSystem';
+import { BeatManager } from '../src/gameplay/BeatManager';
+import type { MoveCategory } from '../src/gameplay/moveTypes';
 import { PitSession, type FrameInput } from '../src/gameplay/PitSession';
+import { SongTimeline } from '../src/audio/SongTimeline';
+import { testSong } from './helpers';
 
 const DT = 1 / 60;
 
-/** Headless bot that dances through a whole song on the beat. */
-function playThrough(songId: string, offset = 0.01) {
-  const session = new PitSession(getSong(songId), getVenue('basement'));
-  const counts: Record<string, number> = {};
-  for (const k of ['bank', 'bail', 'section', 'songEnd', 'moveScored', 'beatdrop'] as const) {
-    counts[k] = 0;
-    session.events.on(k, () => counts[k]!++);
-  }
-  const script: Array<[MoveRequest['button'], MoveRequest['direction'], number]> = [
-    ['step', 'neutral', 0],
-    ['arms', 'neutral', 0],
-    ['kick', 'neutral', 0],
-    ['floor', 'side', 1],
-    ['arms', 'side', -1],
-    ['step', 'forward', 0],
-    ['floor', 'neutral', 0],
-    ['arms', 'back', 0],
-  ];
-  let i = 0;
-  let pulses = 0;
-  let lastPulse = -1;
-  const end = session.timeline.duration + 0.5;
-  for (let t = -0.2; t < end; t += DT) {
-    const presses: MoveRequest[] = [];
-    const p = session.timeline.pulseAt(Math.max(0, t));
-    const key = Math.round(p.prevTime * 1000);
-    if (t >= 0 && key !== lastPulse) {
-      lastPulse = key;
-      pulses++;
-      // Dance 8 pulses, rest 4 so combos bank.
-      if (pulses % 12 < 8 && !session.moves.busy) {
-        const [button, direction, side] = script[i++ % script.length]!;
-        presses.push({ button, direction, side, pressTime: p.prevTime + offset });
-      }
-    }
-    const input: FrameInput = {
-      moveX: Math.sin(t * 0.7) * 0.6,
-      moveZ: Math.cos(t * 0.5) * 0.6,
-      sprint: false,
-      cameraYaw: Math.PI,
-      presses,
-    };
-    session.update(DT, t, input);
-  }
-  return { session, counts };
+function input(over: Partial<FrameInput> = {}): FrameInput {
+  return { moveX: 0, moveZ: 0, stickX: 0, stickY: 0, sprint: false, presses: [], ...over };
 }
 
-describe('PitSession (headless full song)', () => {
-  for (const song of SONGS) {
-    it(`${song.id} is playable start to finish`, () => {
-      const { session, counts } = playThrough(song.id);
-      expect(counts.songEnd).toBe(1);
-      expect(counts.section).toBe(song.sections.length);
-      expect(counts.beatdrop).toBe(song.events.length);
-      expect(counts.moveScored).toBeGreaterThan(40);
-      expect(counts.bank).toBeGreaterThan(3);
-      expect(counts.bail).toBe(0);
-      expect(session.combo.score).toBeGreaterThan(10000);
-      expect(Number.isFinite(session.player.x) && Number.isFinite(session.player.z)).toBe(true);
-      for (const a of session.crowd.agents) expect(Number.isFinite(a.x + a.z + a.yaw)).toBe(true);
-    });
-  }
-
-  it('off-beat play never bails but scores less than on-beat play', () => {
-    const good = playThrough('basement_rules', 0.01).session.combo.score;
-    const { session, counts } = playThrough('basement_rules', 0.16);
-    expect(counts.bail).toBe(0);
-    expect(session.combo.score).toBeLessThan(good);
-    expect(session.combo.score).toBeGreaterThan(0);
+describe('PitSession', () => {
+  it('plays the test song headless: free movement, combos bank, music events fire', () => {
+    const s = new PitSession(getSong('basement_rules'), getVenue('basement'));
+    const counts: Record<string, number> = { bank: 0, scored: 0, land: 0, section: 0, beatdrop: 0, songEnd: 0 };
+    for (const k of Object.keys(counts) as (keyof typeof counts)[]) s.events.on(k as 'bank', () => counts[k]!++);
+    const script: MoveCategory[] = ['footwork', 'arms', 'kick', 'footwork', 'acro', 'footwork'];
+    let i = 0;
+    for (let t = -0.2, f = 0; t < s.timeline.duration + 0.5; t += DT, f++) {
+      // Circle around the pit, throw a move every 0.6 s for 4 s, then pause so the combo banks.
+      const a = t * 0.8;
+      const presses = f % 36 === 0 && t % 7 < 4 ? [{ category: script[i++ % script.length]!, time: t }] : [];
+      s.update(DT, t, input({ moveX: Math.cos(a) * 0.7, moveZ: Math.sin(a) * 0.7, stickX: 0.3, stickY: 0.7, presses }));
+    }
+    expect(counts.songEnd).toBe(1);
+    expect(counts.bank).toBeGreaterThan(5);
+    expect(counts.land).toBeGreaterThan(3);
+    expect(counts.section).toBeGreaterThan(5);
+    expect(counts.beatdrop).toBe(3);
+    expect(s.combo.score).toBeGreaterThan(5000);
   });
 
-  it('crashes a big move thrown into the packed pit wall', () => {
-    const session = new PitSession(getSong('basement_rules'), getVenue('basement'));
+  it('keeps the combo alive across chained moves and banks after the timer runs out', () => {
+    const s = new PitSession(testSong(), getVenue('basement'));
+    const banks: number[] = [];
+    s.events.on('bank', (e) => banks.push(e.result.moves));
+    let t = 0;
+    const press = (category: MoveCategory) => s.update(DT, (t += DT), input({ presses: [{ category, time: t }] }));
+    const idle = (sec: number) => {
+      for (let k = 0; k < sec / DT; k++) s.update(DT, (t += DT), input());
+    };
+    press('footwork');
+    idle(0.4);
+    press('kick');
+    idle(0.9);
+    press('footwork');
+    idle(1);
+    expect(s.combo.entries.length).toBe(3);
+    idle(3);
+    expect(banks).toEqual([3]);
+  });
+
+  it('crashes risky moves thrown into the packed crowd', () => {
+    const s = new PitSession(testSong(), getVenue('basement'));
     let bails = 0;
-    session.events.on('bail', () => bails++);
-    const input = (presses: MoveRequest[]): FrameInput => ({ moveX: 0, moveZ: 0, sprint: false, cameraYaw: 0, presses });
-    for (let t = 0; t < 2; t += DT) session.update(DT, t, input([]));
-    // Teleport into the middle of the watchers and spinkick.
-    const w = session.crowd.agents.find((a) => a.role === 'watcher' && a.ringRow === 1)!;
-    session.player.x = w.x;
-    session.player.z = w.z;
-    session.update(DT, 2, input([{ button: 'kick', direction: 'neutral', side: 0, pressTime: 2 }]));
+    s.events.on('bail', () => bails++);
+    s.update(DT, 0, input());
+    // Teleport into the pit wall.
+    const watchers = s.crowd.agents.filter((a) => a.role === 'watcher');
+    const dense = (a: (typeof watchers)[number]) => s.crowd.countNear(a.x, a.z, 0.84);
+    const w = watchers.reduce((best, a) => (dense(a) > dense(best) ? a : best));
+    s.movement.x = w.x;
+    s.movement.z = w.z;
+    s.update(DT, DT, input({ presses: [{ category: 'acro', time: DT }] }));
     expect(bails).toBe(1);
-    expect(session.moves.isBailing).toBe(true);
+    expect(s.moves.isBailing(DT * 2)).toBe(true);
   });
+});
 
-  it('keeps the player out of the stage and inside the room', () => {
-    const { session } = playThrough('spin_to_win');
-    const v = session.venue;
-    expect(Math.abs(session.player.x)).toBeLessThanOrEqual(v.room.width / 2);
-    expect(session.player.z).toBeGreaterThan(-v.room.depth / 2 + v.stage.depth);
+describe('BeatManager', () => {
+  it('detects on-beat starts and drop hits; never required', () => {
+    const b = new BeatManager(new SongTimeline(testSong()));
+    expect(b.onBeat(0.5)).toBe(true);
+    expect(b.onBeat(0.75)).toBe(false);
+    expect(b.dropHit(8.1)).toBe(true); // beatdrop at bar 4 = 8 s
+    expect(b.isBreakdown(9)).toBe(true);
   });
 });

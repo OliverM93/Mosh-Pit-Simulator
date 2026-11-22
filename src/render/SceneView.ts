@@ -1,10 +1,8 @@
 import * as THREE from 'three';
-import { GRAPHICS_PRESETS, type GraphicsPreset } from '../data/graphics';
-import { MOVE_TUNING } from '../gameplay/MoveSystem';
+import type { GraphicsPreset } from '../data/graphics';
 import type { PitSession } from '../gameplay/PitSession';
 import { CameraController } from './CameraController';
 import type { CharacterLibrary } from './characters';
-import { CrowdRenderer } from './CrowdRenderer';
 import { SkinnedCrowdRenderer } from './SkinnedCrowdRenderer';
 import { Particles } from './Particles';
 import { PlayerView } from './PlayerView';
@@ -21,7 +19,7 @@ export class SceneView {
   readonly cameraCtl: CameraController;
   private readonly venue: VenueView;
   private readonly lights: StageLights;
-  private readonly crowd: CrowdRenderer | SkinnedCrowdRenderer;
+  private readonly crowd: SkinnedCrowdRenderer;
   private readonly player: PlayerView;
   private readonly particles = new Particles();
   private readonly unsubscribe: Array<() => void> = [];
@@ -31,9 +29,9 @@ export class SceneView {
     private readonly session: PitSession,
     private readonly renderer: Renderer,
     graphics: GraphicsPreset = 'ps2',
-    lib: CharacterLibrary | null = null,
+    lib: CharacterLibrary,
   ) {
-    const detail = GRAPHICS_PRESETS[graphics].detail;
+    if (!lib.ready) throw new Error('character models not loaded');
     const v = session.venue;
     this.scene.background = new THREE.Color(v.look.fog);
     this.scene.fog = new THREE.Fog(v.look.fog, v.look.fogNear, v.look.fogFar);
@@ -45,12 +43,11 @@ export class SceneView {
       img.src = session.song.logoUrl;
     }
     this.lights = new StageLights(v);
-    const skinned = !!lib?.ready;
-    const shadows = skinned && graphics !== 'ps1';
+    const shadows = graphics !== 'ps1';
     renderer.gl.shadowMap.enabled = shadows;
     renderer.gl.shadowMap.type = THREE.PCFSoftShadowMap;
-    this.crowd = skinned ? new SkinnedCrowdRenderer(session.crowd.agents, lib!, shadows) : new CrowdRenderer(session.crowd.agents, detail);
-    this.player = new PlayerView(undefined, detail, skinned ? lib!.create('player') : null);
+    this.crowd = new SkinnedCrowdRenderer(session.crowd.agents, lib, shadows);
+    this.player = new PlayerView(lib.createLayered('player'), shadows);
     if (shadows) {
       // Key light straight over the pit: grounds the dancers with real shadows.
       const key = new THREE.SpotLight(0xffe0c0, 26, v.room.height + 6, 0.95, 0.6, 1.2);
@@ -67,13 +64,12 @@ export class SceneView {
 
     this.cameraCtl = new CameraController(renderer.aspect);
     this.cameraCtl.setVenue(v);
-    this.cameraCtl.snapBehind(session.player.x, session.player.z, Math.PI);
+    this.cameraCtl.snapBehind(session.movement.x, session.movement.z, Math.PI);
 
     const ev = session.events;
     this.unsubscribe.push(
-      ev.on('pulse', () => {
-        this.lights.onPulse();
-        this.player.onPulse();
+      ev.on('beat', (e) => {
+        if (e.beatInBar % 2 === 0) this.lights.onPulse();
       }),
       ev.on('section', (e) => this.lights.setSection(e.section.type)),
       ev.on('frenzy', (e) => {
@@ -83,22 +79,20 @@ export class SceneView {
           this.cameraCtl.kickFov(1);
         }
       }),
-      ev.on('moveStart', (e) => {
-        if (e.move.rating === 'perfect') this.renderer.pulseFlash(0.12, 0xffffff);
+      ev.on('scored', (e) => {
+        if (e.entry.tags.includes('ON BEAT')) this.lights.flash(0.25);
       }),
       ev.on('impact', (e) => {
-        this.cameraCtl.addShake(0.12 + e.strength * 0.1 + e.hits * 0.04);
+        this.cameraCtl.addShake(0.08 + e.strength * 0.06 + e.hits * 0.03);
         this.particles.burst(e.x, 1.4, e.z, 8 + e.hits * 6);
         if (e.hits > 0) this.lights.flash(0.4);
       }),
       ev.on('bail', () => {
         this.cameraCtl.addShake(0.35);
         this.renderer.pulseFlash(0.25, 0xff2020);
-        this.player.bailStart = session.songTime;
-        this.player.bailUntil = session.songTime + MOVE_TUNING.bailSec;
       }),
       ev.on('bank', (e) => {
-        if (e.result.total > 20000) this.renderer.pulseFlash(0.2, 0x40ff80);
+        if (e.result.total > 10000) this.renderer.pulseFlash(0.2, 0x40ff80);
       }),
       ev.on('beatdrop', () => {
         this.cameraCtl.addShake(0.25);
@@ -113,8 +107,10 @@ export class SceneView {
 
   update(dt: number): void {
     const s = this.session;
-    const p = s.player;
-    this.cameraCtl.update(dt, p.x, p.y, p.z, p.vx, p.vz);
+    const p = s.movement;
+    const full = s.moves.full;
+    const inMove = !!full && full.def.category !== 'footwork';
+    this.cameraCtl.update(dt, p.x, p.y, p.z, Math.atan2(p.vx, p.vz), Math.hypot(p.vx, p.vz), inMove || s.moves.isBailing(s.songTime));
     this.lights.update(dt, s.energy);
     this.player.update(dt, s);
     this.focus.set(p.x, 0, p.z);

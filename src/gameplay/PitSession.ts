@@ -1,163 +1,139 @@
 import { SongTimeline, type ResolvedSection } from '../audio/SongTimeline';
 import type { SongDefinition } from '../audio/songTypes';
 import { EventBus } from '../core/EventBus';
-import { clamp } from '../core/math';
+import { clamp, wrapAngle } from '../core/math';
 import { MOVES } from '../data/moves';
 import type { VenueDefinition } from '../data/venueTypes';
-import { ComboSystem, type BankResult, type MoveScoreContext, type ScoredMove } from './ComboSystem';
+import { BEAT_TUNING, BeatManager } from './BeatManager';
+import { ComboManager, type BankResult, type ComboEntry } from './ComboManager';
 import { CrowdSim } from './crowd/CrowdSim';
 import { HypeMeter } from './HypeMeter';
-import { MoveSystem, MOVE_TUNING, type ActiveMove, type MoveRequest } from './MoveSystem';
-import { Player, PLAYER_TUNING, type PlayerInput } from './Player';
-import { RATING_HYPE, type Rating } from './timing';
+import { MoveController, type ActiveMove } from './MoveController';
+import type { MoveCategory, MoveSituation } from './moveTypes';
+import { MovementController, type MovementModifier } from './MovementController';
 
 export interface SessionEvents {
-  beat: { beat: number; bar: number; beatInBar: number; time: number };
-  pulse: { index: number; time: number; section: ResolvedSection };
+  beat: { beat: number; beatInBar: number; time: number };
   section: { section: ResolvedSection };
   beatdrop: { time: number };
   moveStart: { move: ActiveMove };
-  moveScored: { scored: ScoredMove; move: ActiveMove };
-  rating: { rating: Rating; offset: number; move: string };
-  bail: { lost: number; reason: 'crash' };
-  bank: { result: BankResult };
+  moveEnd: { move: ActiveMove; cancelled: boolean };
+  land: { move: ActiveMove; quality: 'clean' | 'sketchy' };
+  scored: { entry: ComboEntry; move: ActiveMove };
   bonus: { name: string; value: number };
+  bail: { lost: number };
+  bank: { result: BankResult };
   frenzy: { active: boolean };
   impact: { x: number; z: number; strength: number; hits: number };
-  land: { quality: 'clean' | 'sketchy' | 'hop' };
   songEnd: { time: number };
 }
 
-export interface FrameInput extends PlayerInput {
-  presses: MoveRequest[];
+export interface MovePress {
+  category: MoveCategory;
+  /** Song time of the key event. */
+  time: number;
 }
 
-interface PendingMoveContext {
-  ctx: Omit<MoveScoreContext, 'landing'>;
-  impactDone: boolean;
+export interface FrameInput {
+  /** Stick rotated into world space (camera relative), length 0..1. */
+  moveX: number;
+  moveZ: number;
+  /** Raw stick: x = right, y = forward. */
+  stickX: number;
+  stickY: number;
+  sprint: boolean;
+  presses: MovePress[];
 }
 
 export const SESSION_TUNING = {
-  breakdownBonus: 500,
-  breakdownHype: 0.12,
-  /** A perfect move this close (in pulses) to a beatdrop is a DROP HIT. */
-  dropWindowPulses: 0.5,
-  /** Crowd members within space × this make a move cramped. */
-  crampedFactor: 0.8,
-  crampedCount: 2,
-  /** Advanced moves with at least this many people inside their space crash (bail). */
+  /** Risky moves with this many people within space × crashFactor crash. */
   crashCount: 4,
   crashFactor: 0.7,
+  /** Landing with this many people within `sketchyRadius` is sketchy. */
+  sketchyCount: 2,
+  sketchyRadius: 0.6,
   impactStrength: 1.2,
-  pitScale: { intro: 0.95, verse: 1, chorus: 1.05, breakdown: 1.3, heavy: 1.4, outro: 1 } as Record<string, number>,
+  /** Visual air height for camera/shadow (the clip itself lifts the body). */
+  airHeight: 0.5,
+  hypePerDifficulty: 0.035,
+  pitScale: { intro: 0.95, verse: 1, chorus: 1.05, breakdown: 1.25, heavy: 1.35, outro: 1 } as Record<string, number>,
 };
 
+const EMPTY_INPUT: FrameInput = { moveX: 0, moveZ: 0, stickX: 0, stickY: 0, sprint: false, presses: [] };
+
 /**
- * One play-through of a song in a venue: wires the timeline, move system,
- * scoring, hype, player and crowd together. Headless – rendering, audio and
- * UI only listen to `events` and read state.
+ * One run through the test song: wires movement, moves, combo, music and
+ * crowd. Headless – render, audio and UI listen to `events` and read state.
  */
 export class PitSession {
   readonly song: SongDefinition;
   readonly venue: VenueDefinition;
   readonly timeline: SongTimeline;
-  readonly moves: MoveSystem;
-  readonly combo = new ComboSystem();
+  readonly beats: BeatManager;
+  readonly movement = new MovementController();
+  readonly moves = new MoveController(MOVES);
+  readonly combo = new ComboManager();
   readonly hype = new HypeMeter();
-  readonly player = new Player();
   readonly crowd: CrowdSim;
   readonly events = new EventBus<SessionEvents>();
 
   songTime = -Infinity;
   ended = false;
-  /** Smoothed 0..1 energy (section intensity + hype) for crowd, lights, camera. */
+  /** Smoothed 0..1 energy (music + hype) for crowd, lights and camera. */
   energy = 0;
-  lastWallContact = false;
-  private pending: PendingMoveContext | null = null;
-  private lastSection = -1;
-  private lastPulseKey = '';
-  private lastBeat = -Infinity;
+  /** Momentum at the start of the running full-body move (scored on landing). */
+  private startMomentum = new Map<number, number>();
 
   constructor(song: SongDefinition, venue: VenueDefinition) {
     this.song = song;
     this.venue = venue;
     this.timeline = new SongTimeline(song);
-    this.moves = new MoveSystem(this.timeline, MOVES);
+    this.beats = new BeatManager(this.timeline);
     this.crowd = new CrowdSim(venue);
-    this.player.reset(venue.pit.x, venue.pit.z + 0.5);
+    this.movement.reset(venue.pit.x, venue.pit.z + 0.8);
   }
 
   get section(): ResolvedSection {
-    return this.timeline.sectionAt(Math.max(0, this.songTime));
+    return this.beats.section(this.songTime);
   }
 
-  /** Restart for looping modes; keeps score unless `resetScore`. */
-  restart(resetScore: boolean): void {
-    this.songTime = -Infinity;
-    this.ended = false;
-    this.lastSection = -1;
-    this.lastPulseKey = '';
-    this.lastBeat = -Infinity;
-    this.moves.reset();
-    this.pending = null;
-    if (resetScore) {
-      this.combo.reset();
-      this.hype.reset();
-    } else {
-      this.combo.bank();
-    }
-  }
-
-  update(dt: number, songTime: number, input: FrameInput): void {
-    const prevTime = this.songTime;
+  update(dt: number, songTime: number, input: FrameInput = EMPTY_INPUT): void {
+    const prev = this.songTime === -Infinity ? songTime - dt : this.songTime;
     this.songTime = songTime;
-    this.emitMusicEvents(prevTime === -Infinity ? songTime - dt : prevTime, songTime);
+    this.onMusic(prev, songTime);
 
-    // Moves.
-    const presses = input.presses.slice().sort((a, b) => a.pressTime - b.pressTime);
-    for (const p of presses) this.moves.press(p);
-    this.moves.update(songTime);
-    // Handlers can raise follow-up events (e.g. a crash bail) – drain until quiet.
-    for (let events = this.moves.drain(); events.length; events = this.moves.drain()) {
-      for (const e of events) {
-        switch (e.type) {
-          case 'start':
-            this.onMoveStart(e.move, input);
-            break;
-          case 'convert':
-            this.player.retargetJump(e.move, songTime);
-            this.events.emit('moveStart', { move: e.move });
-            break;
-          case 'end':
-            this.onMoveEnd(e.move);
-            break;
-          case 'bail': {
-            const lost = this.combo.bail();
-            this.hype.bail();
-            this.pending = null;
-            this.events.emit('bail', { lost, reason: e.reason });
-            this.crowd.react('ooh', 0.7, this.player.x, this.player.z);
-            break;
-          }
-          case 'recover':
-            break;
+    const situation: MoveSituation = { stickX: input.stickX, stickY: input.stickY, speed: this.movement.speed };
+    for (const p of [...input.presses].sort((a, b) => a.time - b.time)) this.moves.press(p.category, p.time, situation);
+    this.moves.update(songTime, situation);
+    // Handlers can raise follow-up events (a crash bail on start) – drain until quiet.
+    for (let batch = this.moves.drain(); batch.length; batch = this.moves.drain()) {
+      for (const e of batch) {
+        if (e.type === 'start') this.onStart(e.move, input);
+        else if (e.type === 'land') this.onLand(e.move);
+        else if (e.type === 'end') this.events.emit('moveEnd', { move: e.move, cancelled: e.cancelled });
+        else if (e.type === 'bail') {
+          this.hype.bail();
+          this.events.emit('bail', { lost: this.combo.bail() });
+          this.crowd.react('ooh', 0.7, this.movement.x, this.movement.z);
         }
       }
     }
 
-    // Mid-move impact for space-hungry moves.
-    const cur = this.moves.current;
-    if (cur && this.pending && !this.pending.impactDone && cur.def.space >= 1 && this.moves.progress(songTime) >= 0.45) {
-      this.pending.impactDone = true;
-      const hits = this.crowd.impact(this.player.x, this.player.z, cur.def.space, SESSION_TUNING.impactStrength);
-      this.events.emit('impact', { x: this.player.x, z: this.player.z, strength: cur.def.difficulty, hits });
+    // Locomotion with the running moves' influence.
+    const mv = this.movement;
+    mv.update(dt, { moveX: input.moveX, moveZ: input.moveZ, sprint: input.sprint }, this.modifier(songTime));
+    const full = this.moves.full;
+    if (full?.def.air && this.moves.airborne(songTime)) {
+      const p = this.moves.progress(full, songTime);
+      mv.y = Math.sin(Math.PI * clamp((p - full.def.air.takeoff) / (full.def.air.land - full.def.air.takeoff), 0, 1)) * SESSION_TUNING.airHeight;
+    } else {
+      mv.y = 0;
     }
 
-    // Player physics + crowd.
-    this.player.update(dt, songTime, input, this.moves.current, this.moves.isBailing);
-    const pulse = this.timeline.pulseAt(songTime);
+    // Crowd.
     const section = this.section;
     this.energy = clamp(section.intensity * 0.75 + this.hype.value * 0.35 + (this.hype.frenzy ? 0.3 : 0), 0, 1);
+    const pulse = this.timeline.pulseAt(Math.max(0, songTime));
     this.crowd.update(dt, {
       time: songTime,
       beat: this.timeline.beatAt(songTime),
@@ -165,19 +141,17 @@ export class PitSession {
       pulsePhase: pulse.phase,
       energy: this.energy,
       frenzy: this.hype.frenzy,
-      pitScale: (SESSION_TUNING.pitScale[section.type] ?? 1) * (1 + this.hype.value * 0.08),
-      playerX: this.player.x,
-      playerZ: this.player.z,
+      pitScale: (SESSION_TUNING.pitScale[section.type] ?? 1) * (1 + this.hype.value * 0.06),
+      playerX: mv.x,
+      playerZ: mv.z,
     });
-    const push = this.crowd.resolvePlayer(this.player.x, this.player.z, PLAYER_TUNING.radius);
-    this.player.push(push.dx, push.dz);
-    this.lastWallContact = push.wall;
-    this.clampPlayer();
+    const push = this.crowd.resolvePlayer(mv.x, mv.z, 0.33);
+    mv.push(push.dx, push.dz);
+    const { width, depth } = this.venue.room;
+    mv.clampTo(-width / 2, width / 2, -depth / 2 + this.venue.stage.depth + 0.25, depth / 2);
 
-    // Combo chain window / banking.
-    const banked = this.combo.tick(songTime, this.moves.busy);
+    const banked = this.combo.tick(dt, this.moves.busy || this.moves.isBailing(songTime));
     if (banked) this.onBank(banked);
-
     if (this.hype.update(dt)) this.events.emit('frenzy', { active: false });
 
     if (!this.ended && songTime >= this.timeline.duration) {
@@ -188,113 +162,107 @@ export class PitSession {
     }
   }
 
-  private clampPlayer(): void {
-    const { width, depth } = this.venue.room;
-    const stageFront = -depth / 2 + this.venue.stage.depth + 0.25;
-    this.player.clampTo(-width / 2, width / 2, stageFront, depth / 2);
-  }
-
-  private onMoveStart(move: ActiveMove, input: FrameInput): void {
-    const p = this.player;
-    p.beginMove(move, input);
-    const def = move.def;
-    const section = this.timeline.sectionAt(Math.max(0, move.startTime));
-    const ctx: Omit<MoveScoreContext, 'landing'> = {
-      rating: move.rating,
-      section: section.type,
-      cleanLink: move.cleanLink,
-      runUp: p.hasRunUp(move.startTime),
-      cramped: this.crowd.countNear(p.x, p.z, def.space * SESSION_TUNING.crampedFactor) >= SESSION_TUNING.crampedCount,
-      frenzy: this.hype.frenzy,
-      dropHit: move.rating === 'perfect' && this.nearDrop(move.startTime),
+  /** How the running moves shape locomotion (bail: almost no control). */
+  private modifier(time: number): MovementModifier | null {
+    if (this.moves.isBailing(time)) return { steer: 0, speed: 0, carry: 0.2, lockFacing: true };
+    const f = this.moves.full;
+    const u = this.moves.upper;
+    if (!f && !u) return null;
+    const a = f?.def.movement;
+    const b = u?.def.movement;
+    return {
+      steer: Math.min(a?.steer ?? 1, b?.steer ?? 1),
+      speed: (a?.speed ?? 1) * (b?.speed ?? 1),
+      carry: Math.max(a?.carry ?? 0, b?.carry ?? 0),
+      lockFacing: !!f && f.def.category !== 'footwork',
     };
-    // Risk is spatial, not rhythmic: a big move thrown into a packed crowd crashes.
-    if (def.advanced && this.crowd.countNear(p.x, p.z, def.space * SESSION_TUNING.crashFactor) >= SESSION_TUNING.crashCount) {
-      this.events.emit('moveStart', { move });
-      this.moves.forceBail(move.startTime, 'crash');
-      return;
+  }
+
+  private onStart(move: ActiveMove, input: FrameInput): void {
+    const mv = this.movement;
+    const def = move.def;
+    if (def.layer === 'full') this.startMomentum.set(move.seq, mv.momentum);
+    // Facing: cartwheels travel along the stick with the body side-on; others keep the running line.
+    if (def.movement.sideImpulse) {
+      const travel = Math.atan2(input.moveX, input.moveZ);
+      const a = wrapAngle(travel - Math.PI / 2);
+      const b = wrapAngle(travel + Math.PI / 2);
+      // Pick the side-on facing closer to the current body facing (less spin).
+      const useA = Math.abs(wrapAngle(a - mv.yaw)) <= Math.abs(wrapAngle(b - mv.yaw));
+      mv.face(useA ? a : b);
+      move.mirror = !useA;
+      mv.addSideImpulse(travel, def.movement.sideImpulse);
+    } else if (mv.speed < 0.6 && Math.hypot(input.moveX, input.moveZ) > 0.3) {
+      mv.face(Math.atan2(input.moveX, input.moveZ));
     }
-    this.pending = { ctx, impactDone: false };
     this.events.emit('moveStart', { move });
-    this.events.emit('rating', { rating: move.rating, offset: move.offset, move: def.name });
-    // Ground moves score immediately; air moves and hops on landing.
-    if (!move.airborne) this.score(move, ctx);
-    else this.combo.keepAlive(move.startTime);
-  }
 
-  private onMoveEnd(move: ActiveMove): void {
-    if (!move.airborne || !this.pending) {
-      this.pending = null;
+    // Risk is spatial: big moves into a packed crowd crash.
+    if (def.risky && this.crowd.countNear(mv.x, mv.z, def.space * SESSION_TUNING.crashFactor) >= SESSION_TUNING.crashCount) {
+      this.moves.bail(move.startTime);
       return;
     }
-    const pending = this.pending;
-    this.pending = null;
-    if (move.def.id === 'hop') {
-      this.score(move, pending.ctx);
-      this.events.emit('land', { quality: 'hop' });
-      return;
+    if (def.air) {
+      this.combo.refill();
+      if (this.beats.dropHit(move.startTime) && this.combo.addBonus(BEAT_TUNING.dropBonus)) {
+        this.events.emit('bonus', { name: 'DROP HIT', value: BEAT_TUNING.dropBonus });
+      }
+      return; // scored on landing
     }
-    const late = (move.conversionProgress ?? 0) > MOVE_TUNING.sketchyAfter;
-    const crowded = this.crowd.countNear(this.player.x, this.player.z, 0.55) >= 2;
-    const landing = late || crowded ? 'sketchy' : 'clean';
-    this.score(move, { ...pending.ctx, cramped: pending.ctx.cramped, landing });
-    this.events.emit('land', { quality: landing });
-    const hits = this.crowd.impact(this.player.x, this.player.z, move.def.space * 0.8, SESSION_TUNING.impactStrength);
-    this.events.emit('impact', { x: this.player.x, z: this.player.z, strength: move.def.difficulty * 1.2, hits });
+    this.score(move);
   }
 
-  private score(move: ActiveMove, ctx: MoveScoreContext): void {
-    const scored = this.combo.addMove(move.def, ctx, this.songTime);
-    const hype = RATING_HYPE[ctx.rating] * move.def.difficulty * (scored.repetitionFactor >= 0.5 ? 1 : 0.2);
-    if (this.hype.add(hype)) {
+  private onLand(move: ActiveMove): void {
+    const mv = this.movement;
+    const crowded = this.crowd.countNear(mv.x, mv.z, SESSION_TUNING.sketchyRadius) >= SESSION_TUNING.sketchyCount;
+    const quality = crowded ? 'sketchy' : 'clean';
+    this.events.emit('land', { move, quality });
+    this.score(move, quality);
+    const hits = this.crowd.impact(mv.x, mv.z, move.def.space * 0.8, SESSION_TUNING.impactStrength);
+    this.events.emit('impact', { x: mv.x, z: mv.z, strength: move.def.difficulty, hits });
+  }
+
+  private score(move: ActiveMove, landing?: 'clean' | 'sketchy'): void {
+    const def = move.def;
+    const momentum = this.startMomentum.get(move.seq) ?? this.movement.momentum;
+    this.startMomentum.delete(move.seq);
+    const rep = this.combo.repetitionOf(def.id);
+    const entry = this.combo.addMove(def, {
+      linked: move.linked,
+      layered: move.layered,
+      momentum,
+      onBeat: this.beats.onBeat(move.startTime),
+      section: this.beats.section(move.startTime).type,
+      frenzy: this.hype.frenzy,
+      landing,
+    });
+    this.events.emit('scored', { entry, move });
+    if (this.hype.add(def.difficulty * SESSION_TUNING.hypePerDifficulty * rep)) {
       this.events.emit('frenzy', { active: true });
-      this.crowd.react('cheer', 1, this.player.x, this.player.z);
+      this.crowd.react('cheer', 1, this.movement.x, this.movement.z);
     }
-    this.events.emit('moveScored', { scored, move });
-    for (const b of scored.bonuses) this.events.emit('bonus', b);
   }
 
   private onBank(result: BankResult): void {
     this.events.emit('bank', { result });
     const strength = clamp(Math.log10(Math.max(1, result.total)) / 5, 0, 1);
-    this.hype.add(strength * 0.08);
-    if (result.total > 500) this.crowd.react('cheer', strength, this.player.x, this.player.z);
+    this.hype.add(strength * 0.06);
+    if (result.total > 2000) this.crowd.react('cheer', strength, this.movement.x, this.movement.z);
   }
 
-  private nearDrop(time: number): boolean {
-    const interval = this.timeline.pulseAt(time).interval;
-    return this.timeline.events.some((e) => e.type === 'beatdrop' && Math.abs(e.time - time) <= interval * SESSION_TUNING.dropWindowPulses);
-  }
-
-  private emitMusicEvents(from: number, to: number): void {
-    if (to < 0) return;
-    const tl = this.timeline;
-    const section = tl.sectionAt(to);
-    if (section.index !== this.lastSection) {
-      const first = this.lastSection === -1;
-      this.lastSection = section.index;
-      this.events.emit('section', { section });
-      if (!first && (section.type === 'breakdown' || section.type === 'heavy')) {
-        if (this.combo.addPoolBonus(SESSION_TUNING.breakdownBonus, to)) {
-          this.events.emit('bonus', { name: `${section.label} BONUS`, value: SESSION_TUNING.breakdownBonus });
+  private onMusic(from: number, to: number): void {
+    for (const e of this.beats.events(from, to)) {
+      if (e.type === 'beat') this.events.emit('beat', e);
+      else if (e.type === 'beatdrop') this.events.emit('beatdrop', { time: e.time });
+      else {
+        this.events.emit('section', { section: e.section });
+        if (!e.first && (e.section.type === 'breakdown' || e.section.type === 'heavy')) {
+          if (this.combo.addBonus(BEAT_TUNING.breakdownBonus)) {
+            this.events.emit('bonus', { name: `${e.section.label} BONUS`, value: BEAT_TUNING.breakdownBonus });
+          }
+          if (this.hype.add(0.1)) this.events.emit('frenzy', { active: true });
         }
-        if (this.hype.add(SESSION_TUNING.breakdownHype)) this.events.emit('frenzy', { active: true });
       }
-    }
-    const beat = Math.floor(tl.beatAt(to));
-    if (beat !== this.lastBeat && beat >= 0) {
-      this.lastBeat = beat;
-      const bpb = this.song.beatsPerBar;
-      this.events.emit('beat', { beat, bar: Math.floor(beat / bpb), beatInBar: beat % bpb, time: tl.timeOfBeat(beat) });
-    }
-    const pulse = tl.pulseAt(to);
-    const key = `${section.index}:${pulse.index}`;
-    if (key !== this.lastPulseKey) {
-      this.lastPulseKey = key;
-      this.events.emit('pulse', { index: pulse.index, time: pulse.prevTime, section });
-    }
-    for (const e of tl.eventsBetween(from, to)) {
-      if (e.type === 'beatdrop') this.events.emit('beatdrop', { time: e.time });
     }
   }
 }

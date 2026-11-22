@@ -1,109 +1,103 @@
 import * as THREE from 'three';
-import { Animator } from '../animation/Animator';
-import { PLAYER_APPEARANCE, type Appearance } from '../data/appearance';
+import { clamp, smoothstep } from '../core/math';
+import { MOVE_TUNING, type ActiveMove } from '../gameplay/MoveController';
 import type { PitSession } from '../gameplay/PitSession';
-import { CharacterRig, singleCharacterMaterials } from './CharacterRig';
-import { resolveLook } from './characterParts';
-import type { SkinnedCharacter } from './characters';
-import { basic, lambert } from './ps1';
+import type { AnimationController, ClipPart } from './AnimationController';
+import { basic } from './ps1';
 
-/** The player's character: rig, animator, blob shadow and the "space ring". */
+/** Locomotion blend: speeds (m/s) and stride lengths (m per clip cycle) of the mocap walk/run. */
+const LOCO = { walkFrom: 0.15, walkFull: 1.4, runFrom: 3.3, runFull: 5.6, walkStride: 1.8, runStride: 3.1 };
+/** Fade times (s). */
+const FADE = { intoMove: 0.08, outOfMove: 0.2, upper: 0.12, bail: 0.06, getUp: 0.5 };
+
+/**
+ * The player's character: drives the layered AnimationController from
+ * gameplay state (locomotion speed, running moves, bail) and draws the
+ * space ring (green = room for big moves, red = crash risk).
+ */
 export class PlayerView {
   readonly group = new THREE.Group();
-  readonly rig: CharacterRig;
-  private readonly animator = new Animator();
+  private readonly anim: AnimationController;
   private readonly ring: THREE.Mesh;
   private readonly ringMat: THREE.MeshBasicMaterial;
-  private readonly shadow: THREE.Mesh;
-  private ringPulse = 0;
-  bailStart = -Infinity;
-  bailUntil = -Infinity;
-  private readonly build: number;
-  private readonly height: number;
-
-  private readonly skinned: SkinnedCharacter | null;
-  /** Wall-clock time for looping idle (mocap idles are not beat-based). */
+  private readonly blob: THREE.Mesh | null;
   private clock = 0;
+  private cycle = 0;
 
-  constructor(appearance: Appearance = PLAYER_APPEARANCE, detail = 1, skinned: SkinnedCharacter | null = null) {
-    this.skinned = skinned;
-    // A touch of self-illumination keeps the player readable in the dark pit.
-    const mats = singleCharacterMaterials(resolveLook(appearance), 0x2a2420);
-    this.rig = new CharacterRig(mats, lambert({}), detail);
-    const look = resolveLook(appearance);
-    for (const name of Object.keys(look) as (keyof typeof look)[]) this.rig.parts[name].visible = look[name].visible;
-    this.rig.root.scale.set(appearance.build, appearance.height, appearance.build);
-    this.build = appearance.build;
-    this.height = appearance.height;
-    if (skinned) {
-      skinned.setShadows(true, true);
-      this.group.add(skinned.object);
-    } else {
-      this.group.add(this.rig.root);
-    }
-
-    this.ringMat = basic({ color: 0x40ff80, transparent: true, opacity: 0.55, depthWrite: false });
-    this.ring = new THREE.Mesh(new THREE.RingGeometry(1.05, 1.15, 24), this.ringMat);
+  constructor(anim: AnimationController, realShadows: boolean) {
+    this.anim = anim;
+    anim.setShadows(true, true);
+    this.group.add(anim.object);
+    this.ringMat = basic({ color: 0x40ff80, transparent: true, opacity: 0.35, depthWrite: false });
+    this.ring = new THREE.Mesh(new THREE.RingGeometry(0.95, 1.02, 40), this.ringMat);
     this.ring.rotation.x = -Math.PI / 2;
-    this.ring.position.y = 0.02;
-    this.shadow = new THREE.Mesh(new THREE.CircleGeometry(0.38, 10), basic({ color: 0x000000, transparent: true, opacity: 0.45, depthWrite: false }));
-    this.shadow.rotation.x = -Math.PI / 2;
-    this.shadow.position.y = 0.015;
-    this.group.add(this.ring, this.shadow);
-  }
-
-  onPulse(): void {
-    this.ringPulse = 1;
+    this.group.add(this.ring);
+    this.blob = realShadows ? null : new THREE.Mesh(new THREE.CircleGeometry(0.38, 12), basic({ color: 0, transparent: true, opacity: 0.45, depthWrite: false }));
+    if (this.blob) {
+      this.blob.rotation.x = -Math.PI / 2;
+      this.group.add(this.blob);
+    }
   }
 
   update(dt: number, s: PitSession): void {
-    const p = s.player;
+    const mv = s.movement;
     const t = s.songTime;
-    const move = s.moves.current;
+    const a = this.anim;
     this.clock += dt;
-    // What to show: [clip, instance key, phase, loop, fade].
-    let clip: string;
-    let key: string;
-    let phase: number;
-    let mirror = false;
-    let loop = false;
-    let fade = 0.12;
-    if (s.moves.isBailing) {
-      [clip, key, phase, fade] = ['bail', `bail:${this.bailStart}`, (t - this.bailStart) / Math.max(0.1, this.bailUntil - this.bailStart), 0.08];
-    } else if (move) {
-      [clip, key, phase, mirror, fade] = [move.def.clip, `${move.def.id}:${move.startTime}`, s.moves.progress(t), move.mirror, 0.1];
-    } else {
-      const speed = p.speed;
-      loop = true;
-      fade = 0.2;
-      if (speed > 3.6) [clip, key, phase] = ['run', 'run', p.stride / 2.6];
-      else if (speed > 0.45) [clip, key, phase] = ['walk', 'walk', p.stride / 1.5];
-      else [clip, key, phase] = ['idle', 'idle', this.skinned ? this.clock / 2.5 : s.timeline.beatAt(Math.max(0, t))];
-    }
-    if (this.skinned) {
-      const sk = this.skinned;
-      sk.play(sk.resolve(clip, mirror), key + (mirror ? ':m' : ''), fade);
-      sk.setPhase(phase, loop);
-      sk.update(dt);
-      sk.object.position.set(p.x, 0, p.z);
-      sk.object.rotation.y = p.yaw;
-    } else {
-      this.animator.play(clip, key, mirror, fade * 0.7);
-      this.animator.update(dt, phase);
-      this.rig.apply(this.animator.pose, p.x, p.y, p.z, p.yaw, this.height, this.build);
-    }
 
-    // Space ring: green = room for big moves, red = cramped. Pulses on the beat.
-    const free = s.crowd.freeSpace(p.x, p.z);
-    const color = free > 1.2 ? 0x40ff80 : free > 0.75 ? 0xffd040 : 0xff3030;
-    this.ringMat.color.setHex(color);
-    this.ringPulse = Math.max(0, this.ringPulse - dt * 5);
-    const scale = 1 + this.ringPulse * 0.12;
-    this.ring.scale.set(scale, scale, scale);
-    this.ringMat.opacity = 0.35 + this.ringPulse * 0.4;
-    this.ring.position.set(p.x, 0.02, p.z);
-    const sh = Math.max(0.3, 1 - p.y * 0.6);
-    this.shadow.scale.set(sh, sh, sh);
-    this.shadow.position.set(p.x, 0.015, p.z);
+    // Locomotion source: idle / walk / run weighted by speed, one shared cycle phase.
+    const sp = mv.speed;
+    const walk = smoothstep(clamp((sp - LOCO.walkFrom) / (LOCO.walkFull - LOCO.walkFrom), 0, 1));
+    const run = smoothstep(clamp((sp - LOCO.runFrom) / (LOCO.runFull - LOCO.runFrom), 0, 1));
+    this.cycle += (dt * sp) / (LOCO.walkStride + (LOCO.runStride - LOCO.walkStride) * run);
+    const phase = this.cycle - Math.floor(this.cycle);
+    const loco: ClipPart[] = [
+      { clip: 'idle', time: (this.clock / a.duration('idle')) % 1 * a.duration('idle'), weight: 1 - walk },
+      { clip: 'walk', time: phase * a.duration('walk'), weight: walk * (1 - run) },
+      { clip: 'run', time: phase * a.duration('run'), weight: walk * run },
+    ];
+
+    if (s.moves.isBailing(t)) {
+      const start = s.moves.bailUntil - MOVE_TUNING.bailSec;
+      const p = clamp((t - start) / MOVE_TUNING.bailSec, 0, 1);
+      const part = [{ clip: 'bail', time: p * a.duration('bail'), weight: 1 }];
+      a.want('lower', `bail:${start}`, part, FADE.bail);
+      a.want('upper', `bail:${start}`, part, FADE.bail);
+    } else {
+      const full = s.moves.full;
+      const upper = s.moves.upper;
+      if (full) {
+        const part = [this.movePart(full, s)];
+        a.want('lower', `m${full.seq}`, part, FADE.intoMove);
+        if (!upper) a.want('upper', `m${full.seq}`, part, FADE.intoMove);
+      } else {
+        // Getting up after a bail needs a slower blend than leaving a move.
+        const fade = t < s.moves.bailUntil + 0.5 ? FADE.getUp : FADE.outOfMove;
+        a.want('lower', 'loco', loco, fade);
+        if (!upper) a.want('upper', 'loco', loco, fade);
+      }
+      if (upper) a.want('upper', `m${upper.seq}`, [this.movePart(upper, s)], FADE.upper);
+    }
+    a.update(dt);
+    a.object.position.set(mv.x, 0, mv.z);
+    a.object.rotation.y = mv.yaw;
+
+    // Space ring: how much room there is for big moves.
+    const free = s.crowd.freeSpace(mv.x, mv.z);
+    this.ringMat.color.setHex(free > 1.2 ? 0x40ff80 : free > 0.75 ? 0xffd040 : 0xff3030);
+    this.ring.position.set(mv.x, 0.02, mv.z);
+    if (this.blob) {
+      const k = Math.max(0.4, 1 - mv.y * 0.8);
+      this.blob.scale.set(k, k, k);
+      this.blob.position.set(mv.x, 0.015, mv.z);
+    }
+  }
+
+  /** Clip time from move progress (gameplay owns the timing; the clip range cuts slow wind-ups). */
+  private movePart(m: ActiveMove, s: PitSession): ClipPart {
+    const clip = this.anim.resolve(m.def.clip, m.mirror);
+    const [r0, r1] = m.def.clipRange;
+    const p = s.moves.progress(m, s.songTime);
+    return { clip, time: (r0 + (r1 - r0) * p) * this.anim.duration(clip), weight: 1 };
   }
 }

@@ -1,59 +1,62 @@
-/** Move definitions are pure data. See docs/COMBO_SYSTEM.md. */
+/** Move definitions are pure data (src/data/moves.ts). See docs/PROTOTYPE_2.md and docs/COMBO_SYSTEM.md. */
 
-export type MoveCategory = 'step' | 'arms' | 'kick' | 'floor' | 'air';
+/** One button per category (hybrid input: the button picks the category, the situation picks the move). */
+export type MoveCategory = 'footwork' | 'arms' | 'kick' | 'acro';
 
-/** Abstract move buttons (keyboard Q/E/R/F/Space, gamepad X/Y/B/RB/A). */
-export type MoveButton = 'step' | 'arms' | 'kick' | 'floor' | 'jump';
+/** `full` = whole body; `upper` = arms only, plays on top of locomotion or footwork. */
+export type MoveLayer = 'full' | 'upper';
 
-/** Stick direction relative to the camera at the moment of the press. */
-export type InputDirection = 'neutral' | 'forward' | 'back' | 'side';
-
-export interface MoveInput {
-  button: MoveButton;
-  /** Which stick directions trigger this move. Empty/undefined = any direction. */
-  directions?: InputDirection[];
-  /** Only while airborne (converts a hop into this move). */
-  air?: boolean;
+/** What the player is doing when a move button is pressed. */
+export interface MoveSituation {
+  /** Stick relative to the camera: x = right, y = forward, length 0..1. */
+  stickX: number;
+  stickY: number;
+  /** Current ground speed (m/s). */
+  speed: number;
 }
 
 export interface MoveDefinition {
   id: string;
   name: string;
   category: MoveCategory;
-  input: MoveInput;
-  /**
-   * Natural length in seconds. The real length is quantised to a whole
-   * number of timing pulses so every move ends on the grid.
-   */
-  durationSec: number;
-  /** Base points before any multiplier. */
-  score: number;
-  /** How much the combo multiplier grows (1 normal, 0.5 link moves). */
-  multiplierGain: number;
-  /** Point factor for the 1st, 2nd, 3rd... use inside one combo. Last value repeats. */
-  repetition: number[];
-  /** Normalised progress from which the next move may cancel this one. */
-  cancelAt: number;
-  /** 0..1 how much stick steering applies during the move. */
-  moveControl: number;
-  /** Root motion in metres over the whole move (forward/side relative to facing). */
-  rootMotion?: { forward: number; side: number };
-  /** Radius (m) the move needs. Crowd inside gets knocked away; too crowded = cramped. */
-  space: number;
-  /** Advanced moves profit from breakdown / heavy-part bonuses. */
-  advanced: boolean;
-  /** Hype difficulty factor. */
-  difficulty: number;
-  /** Jump height in metres for air moves / hops. */
-  jumpHeight?: number;
-  /** Side moves face the camera direction and move along the stick. */
-  faceCamera?: boolean;
-  /** Animation clip id (see src/animation/clips.ts). */
+  layer: MoveLayer;
+  /** Selection inside the category. The first matching definition (in list order) wins. */
+  when?: {
+    /** Stick held mostly sideways. */
+    side?: boolean;
+    /** Minimum ground speed (run-up). */
+    minSpeed?: number;
+  };
+  /** Play length in seconds – owned by gameplay, the animation follows it. */
+  duration: number;
+  /** Animation clip and the part of it that is played (normalised, cuts slow wind-ups). */
   clip: string;
-  /** Mirror the clip on every second consecutive use (alternating steps). */
+  clipRange: [number, number];
+  /** Mirror on every second consecutive use (alternating sides). */
   alternate?: boolean;
-  /** Short input hint for the move list UI. */
+  /** Airborne between these normalised progress values (takeoff → flight → landing). */
+  air?: { takeoff: number; land: number };
+  /** From this progress on the move can be cancelled into the listed categories. */
+  cancelFrom: number;
+  cancelInto: MoveCategory[];
+  /** Influence on the movement controller while the move runs. */
+  movement: {
+    /** 0..1 how much the stick can still turn the body. */
+    steer: number;
+    /** Max-speed factor. */
+    speed: number;
+    /** 0..1 how much momentum is kept without stick input. */
+    carry: number;
+    /** Sideways travel (m/s) in the stick direction at the start (cartwheel). */
+    sideImpulse?: number;
+  };
+  /** Base points before multipliers. */
+  points: number;
+  /** Feeds the crowd energy. */
+  difficulty: number;
+  /** Space (m radius) the move needs. Too many people inside → crash (risky moves only). */
+  space: number;
+  risky: boolean;
+  /** Short input hint for the move list. */
   hint: string;
-  /** Link moves (2-step, hop) keep combos alive but score little. */
-  link?: boolean;
 }

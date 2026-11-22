@@ -4,15 +4,11 @@ import { SongClock } from '../audio/SongClock';
 import { createSongPlayback, type SongPlayback } from '../audio/SongPlayer';
 import type { SongDefinition } from '../audio/songTypes';
 import { SONGS } from '../data/songs';
-import { setMerch } from '../render/characterTextures';
 import { CharacterLibrary } from '../render/characters';
-import { UserContentLoader } from './userContent';
 import { VENUES } from '../data/venues';
 import type { VenueDefinition } from '../data/venueTypes';
-import { getMode, type GameModeDefinition } from '../gameplay/modes';
-import { classifyDirection } from '../gameplay/MoveResolver';
-import type { MoveRequest } from '../gameplay/MoveSystem';
-import { PitSession, type FrameInput } from '../gameplay/PitSession';
+import type { MoveCategory } from '../gameplay/moveTypes';
+import { PitSession, type FrameInput, type MovePress } from '../gameplay/PitSession';
 import type { ButtonAction } from '../input/bindings';
 import { InputManager, type ButtonEvent } from '../input/InputManager';
 import { Renderer } from '../render/Renderer';
@@ -20,11 +16,11 @@ import { SceneView } from '../render/SceneView';
 import { SaveSystem, type Settings } from '../save/SaveSystem';
 import { Hud } from '../ui/Hud';
 import { UIManager, type MenuScreen } from '../ui/Menu';
-import { helpScreen, mainMenu, messageScreen, pauseScreen, resultsScreen, settingsScreen, songSelect, titleScreen } from '../ui/screens';
+import { helpScreen, mainMenu, messageScreen, pauseScreen, resultsScreen, settingsScreen, titleScreen } from '../ui/screens';
 
 type State = 'title' | 'menu' | 'loading' | 'playing' | 'paused' | 'ending' | 'results';
 
-const MOVE_BUTTONS = new Set<ButtonAction>(['step', 'arms', 'kick', 'floor', 'jump']);
+const MOVE_BUTTONS = new Set<ButtonAction>(['footwork', 'arms', 'kick', 'acro']);
 const SUBSTEP = 1 / 60;
 
 /**
@@ -40,9 +36,9 @@ export class Game {
   private readonly ui: UIManager;
   private readonly hud = new Hud();
   private state: State = 'title';
-  private venue: VenueDefinition = VENUES[0]!;
-  private mode: GameModeDefinition = getMode('arcade');
-  private song: SongDefinition = SONGS[0]!;
+  private readonly venue: VenueDefinition = VENUES[0]!;
+  /** Prototype 2.0: one test song with breakdowns and beatdrops. */
+  private readonly song: SongDefinition = SONGS[0]!;
 
   private session: PitSession | null = null;
   private view: SceneView | null = null;
@@ -54,14 +50,11 @@ export class Game {
   private endTimer = 0;
   private pausedAt = 0;
   private sessionUnsub: Array<() => void> = [];
-  private readonly userContent = new UserContentLoader();
-  /** Blender-built skinned characters (falls back to the procedural box rigs if missing). */
+  /** Blender-built skinned characters (required). */
   private readonly characters = new CharacterLibrary();
   private charactersLoading: Promise<void> | null = null;
-  private userBuffer: AudioBuffer | undefined;
   private attractGraphics = '';
-  /** Set when Free Pit restarts the song mid-frame: remaining sub-steps are skipped. */
-  private restartedThisFrame = false;
+  private attractTime = 0;
 
   constructor(container: HTMLElement) {
     this.renderer = new Renderer(container);
@@ -85,7 +78,7 @@ export class Game {
     });
 
     this.ui.show(titleScreen(() => this.leaveTitle()));
-    void this.loadUserContent();
+    void this.loadCharacters();
     requestAnimationFrame((t) => this.frame(t));
   }
 
@@ -107,30 +100,12 @@ export class Game {
     this.state = 'menu';
     this.showScreen(
       mainMenu(
-        (m) => {
-          this.mode = m;
+        () => {
           this.sfx.uiSelect();
-          this.showSongSelect();
+          void this.startSong();
         },
         () => this.showSettings(() => this.showMainMenu()),
         () => this.showScreen(helpScreen(() => this.showMainMenu())),
-      ),
-    );
-  }
-
-  private showSongSelect(): void {
-    this.state = 'menu';
-    this.showScreen(
-      songSelect(
-        [...SONGS, ...this.userContent.listing()],
-        this.mode,
-        this.venue.name,
-        (id) => this.save.getHighscore(id, this.venue.id)?.score ?? 0,
-        (song) => {
-          this.sfx.uiSelect();
-          void this.startSong(song);
-        },
-        () => this.showMainMenu(),
       ),
     );
   }
@@ -166,10 +141,12 @@ export class Game {
 
   /** Live, silent pit behind the menus. */
   private startAttract(): void {
-    const session = new PitSession(SONGS[0]!, this.venue);
+    if (!this.characters.ready) return;
+    const session = new PitSession(this.song, this.venue);
     const view = new SceneView(session, this.renderer, this.save.data.settings.graphics, this.characters);
     this.attract = { session, view };
     this.attractGraphics = this.save.data.settings.graphics;
+    this.attractTime = 0;
   }
 
   private stopAttract(): void {
@@ -177,38 +154,26 @@ export class Game {
     this.attract = null;
   }
 
-  /** Own songs/logos from public/user-content (git-ignored). Merch logos must be set before the first scene. */
-  private async loadUserContent(): Promise<void> {
+  private async loadCharacters(): Promise<void> {
     // PS1 snapping is patched into every material; the shared uniform switches it off for PS2/HD.
     this.charactersLoading = this.characters.load('./models/', true).catch((err) => console.warn('characters', err));
-    await Promise.all([this.userContent.load(), this.charactersLoading]);
-    if (this.userContent.merchLogos.length) setMerch(this.userContent.merchLogos);
+    await this.charactersLoading;
     if (!this.attract && !this.session) this.startAttract();
   }
 
   // ------------------------------------------------------------------ session lifecycle
 
-  private async startSong(song: SongDefinition): Promise<void> {
+  private async startSong(): Promise<void> {
     if (this.state === 'loading') return; // ignore double activation
     this.state = 'loading';
     await this.audio.unlock();
     await this.charactersLoading;
-    this.userBuffer = undefined;
-    let detected = '';
-    if (this.userContent.isUserSong(song.id)) {
-      this.showScreen(messageScreen('LOADING', `${song.artist.toUpperCase()} – ${song.title.toUpperCase()}<br>decoding and detecting the beat…`));
-      try {
-        const prepared = await this.userContent.prepare(song.id, this.audio);
-        song = prepared.song;
-        this.userBuffer = prepared.buffer;
-        if (prepared.estimate) detected = `AUTO-DETECTED ${prepared.estimate.bpm} BPM – OFFSET ${prepared.estimate.offsetSec.toFixed(2)} S`;
-      } catch (err) {
-        this.state = 'menu';
-        this.showScreen(messageScreen('SONG ERROR', String(err instanceof Error ? err.message : err), () => this.showSongSelect()));
-        return;
-      }
+    if (!this.characters.ready) {
+      this.state = 'menu';
+      this.showScreen(messageScreen('MODELS MISSING', 'public/models/*.glb could not be loaded.', () => this.showMainMenu()));
+      return;
     }
-    this.song = song;
+    const song = this.song;
     this.endSession();
     this.stopAttract();
     this.ui.hide();
@@ -216,11 +181,11 @@ export class Game {
     const session = new PitSession(song, this.venue);
     this.session = session;
     this.view = new SceneView(session, this.renderer, this.save.data.settings.graphics, this.characters);
-    this.hud.attach(session, this.mode, this.save.getHighscore(song.id, this.venue.id)?.score ?? 0);
+    this.hud.attach(session, this.save.getHighscore(song.id, this.venue.id)?.score ?? 0);
     this.wireSfx(session);
 
     const ctx = this.audio.ctx!;
-    this.playback = createSongPlayback(this.audio, session.timeline, this.userBuffer);
+    this.playback = createSongPlayback(this.audio, session.timeline);
     await this.playback.load();
     this.clock = new SongClock(ctx);
     this.clock.userOffset = this.save.data.settings.audioOffsetMs / 1000;
@@ -231,8 +196,12 @@ export class Game {
     this.lastSongTime = -lead;
     this.state = 'playing';
     this.input.requestPointerLock();
-    if (detected) this.hud.showHint(detected, 5);
-    else this.hud.showHint(this.input.lastDevice === 'gamepad' ? 'CHAIN MOVES · LAND BIG ONES ON THE BEAT · BACK = MOVE LIST' : 'CHAIN MOVES · LAND BIG ONES ON THE BEAT · CLICK = LOOK · H = MOVE LIST', 6);
+    this.hud.showHint(
+      this.input.lastDevice === 'gamepad'
+        ? 'X FOOTWORK · Y ARMS · B KICK · A ACRO · RT SPRINT · BACK = MOVE LIST'
+        : 'Q FOOTWORK · E ARMS · R KICK · SPACE ACRO · SHIFT SPRINT · H = MOVE LIST',
+      7,
+    );
   }
 
   /** Recorded songs may have music before beat 0 (offsetSec): start early enough to play it. */
@@ -245,16 +214,16 @@ export class Game {
     for (const u of this.sessionUnsub) u();
     const ev = s.events;
     this.sessionUnsub = [
-      ev.on('rating', (e) => {
-        if (e.rating !== 'miss') this.sfx.rating(e.rating);
-      }),
       ev.on('moveStart', (e) => {
         const c = e.move.def.category;
-        if (c === 'kick' || c === 'air' || c === 'floor') this.sfx.whoosh(e.move.def.difficulty * 0.6);
+        if (c === 'kick' || c === 'acro') this.sfx.whoosh(e.move.def.difficulty * 0.5);
+        else if (c === 'arms') this.sfx.whoosh(0.3);
       }),
-      ev.on('impact', (e) => {
-        if (e.hits > 0) this.sfx.impact(0.5 + e.hits * 0.2);
+      ev.on('scored', (e) => {
+        const t = e.entry.tags;
+        if (t.includes('ON BEAT') || t.includes('CLEAN')) this.sfx.bonusTag(t.includes('ON BEAT') && t.includes('CLEAN'));
       }),
+      ev.on('impact', (e) => this.sfx.impact(0.4 + e.hits * 0.2)),
       ev.on('bail', () => {
         this.sfx.bail();
         this.sfx.ooh();
@@ -270,27 +239,11 @@ export class Game {
       ev.on('frenzy', (e) => {
         if (e.active) this.sfx.cheer(1);
       }),
-      ev.on('songEnd', () => this.onSongEnd()),
+      ev.on('songEnd', () => {
+        this.state = 'ending';
+        this.endTimer = 1.8;
+      }),
     ];
-  }
-
-  private onSongEnd(): void {
-    const s = this.session;
-    if (!s) return;
-    if (this.mode.loopSong) {
-      // Free Pit: start the next loop right away, keep the score running.
-      const ctx = this.audio.ctx!;
-      const lead = this.leadIn(0.6);
-      const start = ctx.currentTime + lead;
-      s.restart(false);
-      this.restartedThisFrame = true;
-      this.playback?.start(start);
-      this.clock?.start(start);
-      this.lastSongTime = -lead;
-      return;
-    }
-    this.state = 'ending';
-    this.endTimer = 1.8;
   }
 
   private showResults(): void {
@@ -299,18 +252,15 @@ export class Game {
     this.input.releasePointerLock();
     const stats = s.combo.stats;
     const prev = this.save.getHighscore(this.song.id, this.venue.id)?.score ?? 0;
-    const isNew = this.mode.saveHighscore
-      ? this.save.recordResult(this.song.id, this.venue.id, { score: s.combo.score, bestCombo: stats.bestCombo, perfects: stats.ratings.perfect }, stats.moves)
-      : false;
+    const isNew = this.save.recordResult(this.song.id, this.venue.id, { score: s.combo.score, bestCombo: stats.bestCombo, perfects: 0 }, stats.moves);
     this.state = 'results';
     this.hud.hide();
     if (isNew || s.combo.score > 20000) this.sfx.cheer(1);
     this.showScreen(
       resultsScreen(
         { song: this.song, score: s.combo.score, stats, newHighscore: isNew, previousBest: prev },
-        () => void this.startSong(this.song),
-        () => this.quitToMenu(true),
-        () => this.quitToMenu(false),
+        () => void this.startSong(),
+        () => this.quitToMenu(),
       ),
     );
   }
@@ -327,9 +277,9 @@ export class Game {
   private showPauseMenu(): void {
     const screen = pauseScreen(
       () => this.resume(),
-      () => void this.startSong(this.song),
+      () => void this.startSong(),
       () => this.showSettings(() => this.showPauseMenu()),
-      () => this.quitToMenu(false),
+      () => this.quitToMenu(),
     );
     this.showScreen(screen);
   }
@@ -354,13 +304,12 @@ export class Game {
     this.hud.hide();
   }
 
-  private quitToMenu(toSongs: boolean): void {
+  private quitToMenu(): void {
     void this.audio.resume();
     this.endSession();
     this.input.releasePointerLock();
     if (!this.attract) this.startAttract();
-    if (toSongs) this.showSongSelect();
-    else this.showMainMenu();
+    this.showMainMenu();
   }
 
   // ------------------------------------------------------------------ frame loop
@@ -377,7 +326,7 @@ export class Game {
     } else if (this.state === 'paused' && this.view) {
       this.view.render(0);
     } else if (this.attract) {
-      this.updateAttract(dt, now);
+      this.updateAttract(dt);
     } else if (this.view) {
       this.view.render(dt);
     }
@@ -411,39 +360,35 @@ export class Game {
     const songTime = clock.now(now);
 
     const cam = view.cameraCtl;
-    if (this.state === 'playing') cam.look(input.lookX, input.lookY);
+    const playing = this.state === 'playing';
+    if (playing) cam.look(input.lookX, input.lookY);
     const yaw = cam.yaw;
     // Camera-relative stick → world. Forward = (sin yaw, cos yaw), right = (-cos yaw, sin yaw).
-    const fx = Math.sin(yaw);
-    const fz = Math.cos(yaw);
-    const wx = -Math.cos(yaw) * input.moveX + fx * input.moveY;
-    const wz = Math.sin(yaw) * input.moveX + fz * input.moveY;
+    const wx = -Math.cos(yaw) * input.moveX + Math.sin(yaw) * input.moveY;
+    const wz = Math.sin(yaw) * input.moveX + Math.cos(yaw) * input.moveY;
 
-    const presses: MoveRequest[] = [];
-    if (this.state === 'playing') {
-      const dir = classifyDirection(input.moveX, input.moveY);
+    const presses: MovePress[] = [];
+    if (playing) {
       for (const e of input.events) {
-        if (!MOVE_BUTTONS.has(e.action)) continue;
-        presses.push({ button: e.action as MoveRequest['button'], direction: dir.direction, side: dir.side, pressTime: clock.timeAt(e.time) });
+        if (MOVE_BUTTONS.has(e.action)) presses.push({ category: e.action as MoveCategory, time: clock.timeAt(e.time) });
       }
     }
 
-    // Sub-step physics at 60 Hz; song time interpolated across sub-steps.
+    // Sub-step at 60 Hz; song time interpolated across sub-steps.
     const steps = Math.max(1, Math.ceil(dt / SUBSTEP - 1e-6));
     const from = Math.min(this.lastSongTime, songTime);
     for (let i = 1; i <= steps; i++) {
       const frameInput: FrameInput = {
-        moveX: this.state === 'playing' ? wx : 0,
-        moveZ: this.state === 'playing' ? wz : 0,
+        moveX: playing ? wx : 0,
+        moveZ: playing ? wz : 0,
+        stickX: playing ? input.moveX : 0,
+        stickY: playing ? input.moveY : 0,
         sprint: input.sprint,
-        cameraYaw: yaw,
         presses: i === 1 ? presses : [],
       };
       s.update(dt / steps, from + ((songTime - from) * i) / steps, frameInput);
-      if (this.restartedThisFrame) break;
     }
-    if (this.restartedThisFrame) this.restartedThisFrame = false;
-    else this.lastSongTime = songTime;
+    this.lastSongTime = songTime;
 
     view.update(dt);
     this.hud.update(dt, s, this.input.lastDevice, this.save.data.settings.showMoveList);
@@ -453,11 +398,16 @@ export class Game {
     if (this.state === 'ending' && (this.endTimer -= dt) <= 0) this.showResults();
   }
 
-  private updateAttract(dt: number, now: number): void {
+  private updateAttract(dt: number): void {
     const { session, view } = this.attract!;
-    const t = (now / 1000) % session.timeline.duration;
-    if (t < session.songTime) session.restart(true);
-    session.update(dt, t, { moveX: 0, moveZ: 0, sprint: false, cameraYaw: 0, presses: [] });
+    this.attractTime += dt;
+    if (this.attractTime > session.timeline.duration) {
+      // Loop the silent backdrop by starting a fresh pit.
+      this.stopAttract();
+      this.startAttract();
+      return;
+    }
+    session.update(dt, this.attractTime);
     view.cameraCtl.look(dt * 0.12, 0);
     view.update(dt);
     view.render(dt);

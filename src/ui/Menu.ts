@@ -66,7 +66,7 @@ export class MenuScreen {
         this.onBack();
         return true;
       }
-      if (action !== 'jump') this.onAny?.(action);
+      if (action !== 'acro') this.onAny?.(action);
       return true;
     }
     const item = this.items[this.focus];

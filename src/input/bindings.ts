@@ -1,17 +1,16 @@
-import type { MoveButton } from '../gameplay/moveTypes';
+import type { MoveCategory } from '../gameplay/moveTypes';
 
 /**
  * Abstract actions. Gameplay never sees keys or gamepad buttons, only these.
  * To rebind or add a device, change the tables below.
  */
-export type ButtonAction = MoveButton | 'pause' | 'confirm' | 'back' | 'up' | 'down' | 'left' | 'right' | 'help';
+export type ButtonAction = MoveCategory | 'pause' | 'confirm' | 'back' | 'up' | 'down' | 'left' | 'right' | 'help';
 
 export const KEYBOARD_BUTTONS: Record<string, ButtonAction[]> = {
-  KeyQ: ['step'],
+  KeyQ: ['footwork'],
   KeyE: ['arms'],
   KeyR: ['kick'],
-  KeyF: ['floor'],
-  Space: ['jump', 'confirm'],
+  Space: ['acro', 'confirm'],
   Escape: ['pause', 'back'],
   KeyP: ['pause'],
   Enter: ['confirm'],
@@ -39,11 +38,10 @@ export const KEYBOARD_AXES = {
 
 /** Standard Gamepad mapping (Xbox labels / PlayStation in comments). */
 export const GAMEPAD_BUTTONS: Record<number, ButtonAction[]> = {
-  0: ['jump', 'confirm'], // A / Cross
+  0: ['acro', 'confirm'], // A / Cross
   1: ['kick', 'back'], // B / Circle
-  2: ['step'], // X / Square
+  2: ['footwork'], // X / Square
   3: ['arms'], // Y / Triangle
-  5: ['floor'], // RB / R1
   9: ['pause'], // Start / Options
   8: ['help'], // Back / Share
   12: ['up'],
