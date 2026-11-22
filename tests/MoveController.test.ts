@@ -87,7 +87,7 @@ describe('MoveController', () => {
     expect(mc.isBailing(0.5)).toBe(true);
   });
 
-  it('repeats held footwork as soon as the cancel window opens (continuous rhythm)', () => {
+  it('repeats held footwork once the step has played out (continuous rhythm)', () => {
     const mc = new MoveController(MOVES);
     const step = getMove('two_step');
     mc.press('footwork', 0, STILL);
@@ -99,6 +99,6 @@ describe('MoveController', () => {
       for (const e of mc.drain()) if (e.type === 'start') starts.push(e.move.startTime);
     }
     expect(starts.length).toBeGreaterThanOrEqual(3);
-    expect(starts[0]).toBeCloseTo(step.duration * step.cancelFrom, 1);
+    expect(starts[0]).toBeCloseTo(step.duration * (step.repeatFrom ?? step.cancelFrom), 1);
   });
 });

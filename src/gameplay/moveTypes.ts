@@ -36,8 +36,10 @@ export interface MoveDefinition {
   clipRange: [number, number];
   /** Mirror on every second consecutive use (alternating sides). */
   alternate?: boolean;
-  /** Holding the button keeps repeating the move as soon as its cancel window opens (rhythmic footwork/arms). */
+  /** Holding the button keeps repeating the move (rhythmic footwork/arms)… */
   repeatOnHold?: boolean;
+  /** …from this progress on: late enough that the full motion plays (defaults to `cancelFrom`). */
+  repeatFrom?: number;
   /** Airborne between these normalised progress values (takeoff → flight → landing). */
   air?: { takeoff: number; land: number };
   /** From this progress on the move can be cancelled into the listed categories. */

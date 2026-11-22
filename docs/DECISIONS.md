@@ -16,6 +16,12 @@ Format: **Datum · Entscheidung** – Begründung · Betroffene Systeme · Alter
   Rhythmus. (3) Cancel-Fenster von Kicks/Acro direkt nach der Landung → Combos gehen ohne Pause weiter.
   (4) Jeder Clip wird beim Bauen gleichmäßig auf den Boden gesetzt (`settle_keys`): die alten Keyframe-Clips der
   Pit-Tänzer sanken bis 20 cm ein, CMU-Clips schwebten ~10 cm. Tänzer nutzen jetzt die neuen Moves.
+- **Nachtrag (Owner: „Arme bewegen sich nicht, eher Schulterkreisen“):** Ursache war ein Fehler im
+  `AnimationController`: three.js entfernt Punkte aus Knochennamen (`wrist.L` → `wristL`), die Oberkörper-Liste
+  passte deshalb nur auf Wirbelsäule/Kopf – die Arme liefen immer mit der Locomotion. Zusätzlich schnitt Halten die
+  Moves zu früh ab (jetzt `repeatFrom` ≈ 86–90 %). Armbewegungen werden jetzt mit gestreckten Armen über Richtung +
+  Reichweite ab der Schulter gebaut (seitliche/überkopf Bögen, von hinten lesbar); 2-Step als Ganzkörperbewegung
+  (Hop, Becken über dem Standbein, Knie/Fuß nach innen gedreht, Bein schwingt im Bogen über das andere).
 - **Alternativen:** Zusätzliche Mocap für Arme (frei nicht verfügbar), Bodenkorrektur zur Laufzeit (teurer, nötig nur
   bei Fehlern in den Daten).
 

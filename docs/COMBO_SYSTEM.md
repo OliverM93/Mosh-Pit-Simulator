@@ -12,9 +12,9 @@ Eine Taste pro Kategorie, Richtung und Tempo wählen den Move (erste passende De
 
 | Taste (Tastatur / Pad) | Bedingung | Move | Ebene | Dauer | Basis | Luftphase | Cancel ab |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| Footwork (Q / X) | – | 2-Step (Halten = weiter steppen) | full | 0,48 s | 50 | – | 62 % |
+| Footwork (Q / X) | – | 2-Step (Halten = weiter steppen) | full | 0,48 s | 50 | – | 70 % |
 | Arms (E / Y) | Stick nach vorn | Windmill (Halten = weiter) | upper | 0,85 s | 120 | – | 50 % |
-| Arms (E / Y) | sonst | Arm Swing (Halten = abwechselnd) | upper | 0,55 s | 90 | – | 60 % |
+| Arms (E / Y) | sonst | Arm Swing (Halten = abwechselnd) | upper | 0,55 s | 90 | – | 78 % |
 | Kick (R / B) | Tempo ≥ 4 m/s | Tornado Kick | full | 1,05 s | 600 | 29–79 % | 80 % |
 | Kick (R / B) | sonst | Spinkick | full | 0,85 s | 300 | 30–70 % | 72 % |
 | Acro (Space / A) | Stick seitlich | Cartwheel (Rad) | full | 1,15 s | 450 | 27–73 % | 75 % |
@@ -23,8 +23,8 @@ Eine Taste pro Kategorie, Richtung und Tempo wählen den Move (erste passende De
 - **Ebenen:** Arms (`upper`) laufen über Laufen und 2-Step („LAYERED“). Während Kick/Acro wird Arms gepuffert.
 - **Cancel-Fenster:** ab „Cancel ab“ darf der nächste Move den laufenden abbrechen (alle Kategorien erlaubt).
 - **Puffer:** Ein Druck bis 0,3 s vor dem Fenster startet genau beim Öffnen; frühere Drücke verfallen.
-- **Halten (`repeatOnHold`):** gehaltene Footwork-/Arms-Taste startet die nächste Wiederholung, sobald das
-  Cancel-Fenster öffnet (abwechselnde Seiten) – ein durchgehender Rhythmus. Kicks/Acro öffnen ihr Fenster direkt
+- **Halten (`repeatOnHold`):** gehaltene Footwork-/Arms-Taste startet die nächste Wiederholung, sobald die
+  Bewegung ausgespielt ist (`repeatFrom`, 86–90 %; abwechselnde Seiten) – ein durchgehender Rhythmus. Kicks/Acro öffnen ihr Fenster direkt
   nach der Landung.
 - **Clean Link:** Start im Cancel-Fenster oder bis 0,25 s nach dem Ende des vorherigen Moves.
 - **Phasen:** Absprung → Luft → Landung. Kicks/Acro werden erst bei der Landung gewertet.

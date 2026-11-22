@@ -26,7 +26,9 @@ export class CharacterLibrary {
 
   async load(baseUrl = './models/', ps1 = false): Promise<void> {
     const loader = new GLTFLoader();
-    const anims = await loader.loadAsync(`${baseUrl}anims.glb`);
+    // Dev builds re-export the models often: bypass the browser cache so changes show up on reload.
+    const bust = import.meta.env.DEV ? `?v=${Date.now()}` : '';
+    const anims = await loader.loadAsync(`${baseUrl}anims.glb${bust}`);
     const animRoot = findBone(anims.scene, 'root');
     const animRootRest = animRoot ? animRoot.position.clone() : new THREE.Vector3();
     // Only rotations (and the root's translation) are animated; per-bone offsets come from each variant.
@@ -36,7 +38,7 @@ export class CharacterLibrary {
     });
 
     const ids = [PLAYER_VARIANT, ...CROWD_VARIANTS];
-    const results = await Promise.all(ids.map((id) => loader.loadAsync(`${baseUrl}char_${id}.glb`).catch(() => null)));
+    const results = await Promise.all(ids.map((id) => loader.loadAsync(`${baseUrl}char_${id}.glb${bust}`).catch(() => null)));
     results.forEach((gltf, i) => {
       if (!gltf) return;
       const scene = gltf.scene;

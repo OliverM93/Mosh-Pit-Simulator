@@ -100,8 +100,8 @@ export class MoveController {
   }
 
   /**
-   * Held button: start the next repetition the moment it is allowed (no buffering, no queue), so a held
-   * footwork/arms button turns into a continuous rhythm.
+   * Held button: start the next repetition once the running one has played its motion (`repeatFrom`), so a
+   * held footwork/arms button turns into a continuous rhythm without cutting the moves short.
    */
   hold(category: MoveCategory, time: number, situation: MoveSituation): void {
     if (this.isBailing(time) || this.buffer) return;
@@ -109,7 +109,7 @@ export class MoveController {
     if (!def?.repeatOnHold) return;
     const running = def.layer === 'upper' ? this.upper : this.full;
     if (running && running.def.category !== category) return;
-    if (running && !this.canCancel(running, category, time)) return;
+    if (running && this.progress(running, time) < (running.def.repeatFrom ?? running.def.cancelFrom)) return;
     if (!running && def.layer === 'upper' && this.full && this.full.def.category !== 'footwork') return;
     this.tryStart(category, time, situation);
   }

@@ -11,6 +11,9 @@ Versionierung nach [SemVer](https://semver.org/lang/de/) (vor 1.0 kann sich alle
   Windmill nach vorn (Arms + vorwärts); 2-Step neu mit Bein, das über das andere schwingt.
 - Halten von Footwork/Arms = durchgehender Rhythmus; Kicks/Acro sind direkt nach der Landung abbrechbar.
 - Behoben: Pit-Tänzer versanken im Boden (alle Clips werden beim Bauen auf den Boden gesetzt).
+- Behoben: Arm-Moves zeigten im Spiel nur Schulterbewegungen (Knochennamen-Fehler in der Oberkörper-Ebene);
+  Halten schneidet Moves nicht mehr ab. Arme schwingen gestreckt in großen Bögen, 2-Step als Ganzkörperbewegung
+  mit nach innen drehendem, kreuzendem Bein.
 - Kamera immer Richtung Band, bewegt sich nur mit dem Spieler (D-029).
 - Neue Grundhaltung (Kampfhaltung aus Mocap), Fortbewegung Swagger → Run → Dash aus dem Bandai-Namco-Datensatz
   (CC BY-NC 4.0), saubere Loops; alle Moves starten/enden in der Grundhaltung → Combos gehen nahtlos ineinander.

@@ -4,11 +4,13 @@ import * as THREE from 'three';
  * Upper-body bones (arms overlay layer). Everything else – root, lower spine,
  * legs – belongs to the lower layer. Names follow the game skeleton (tools/blender/mh.py).
  */
-const UPPER_BONES = new Set([
-  'spine03', 'spine02', 'spine01', 'neck01', 'neck02', 'neck03', 'head',
-  'clavicle.L', 'shoulder01.L', 'upperarm01.L', 'upperarm02.L', 'lowerarm01.L', 'lowerarm02.L', 'wrist.L',
-  'clavicle.R', 'shoulder01.R', 'upperarm01.R', 'upperarm02.R', 'lowerarm01.R', 'lowerarm02.R', 'wrist.R',
-]);
+const UPPER_BONES = new Set(
+  [
+    'spine03', 'spine02', 'spine01', 'neck01', 'neck02', 'neck03', 'head',
+    'clavicle.L', 'shoulder01.L', 'upperarm01.L', 'upperarm02.L', 'lowerarm01.L', 'lowerarm02.L', 'wrist.L',
+    'clavicle.R', 'shoulder01.R', 'upperarm01.R', 'upperarm02.R', 'lowerarm01.R', 'lowerarm02.R', 'wrist.R',
+  ].map((n) => THREE.PropertyBinding.sanitizeNodeName(n)), // GLTFLoader strips the dots: 'wrist.L' → 'wristL'
+);
 
 export type BodyHalf = 'lower' | 'upper';
 

@@ -59,6 +59,9 @@ def author(rig, name, duration, spec, mirror=False):
     chest = 'spine01'
     s_chest = s_world[chest] @ sk.rest[chest].inverted()
     s_hand = {s: s_chest.inverted() @ (s_head[ARMS[s][2]] - s_head[chest]) for s in 'LR'}
+    s_shoulder = {s: s_chest.inverted() @ (s_head[ARMS[s][0]] - s_head[chest]) for s in 'LR'}
+    arm_len = {s: ((s_head[ARMS[s][1]] - s_head[ARMS[s][0]]).length + (s_head[ARMS[s][2]] - s_head[ARMS[s][1]]).length)
+               for s in 'LR'}
     s_elbow = {s: s_chest.inverted() @ (s_head[ARMS[s][1]] - s_head[chest]) for s in 'LR'}
     s_knee_pole = {}
     for s, (up, lo, ft) in LEGS.items():
@@ -82,13 +85,23 @@ def author(rig, name, duration, spec, mirror=False):
         # Legs: feet stay planted at the stance position plus their offsets.
         for s, chain in LEGS.items():
             target = s_head[chain[2]] + d.get(f'foot_{s}', Vector())
-            foot_w = _rot((d.get(f'foot_pitch_{s}', 0.0), 0, 0)) @ s_world[chain[2]]
-            _solve_chain(sk, local, root, chain, target, pelvis_r @ s_knee_pole[s], foot_w)
+            inward = 1 if s == 'R' else -1  # +X is the character's left: the right knee/foot turn in towards +X
+            yaw_in = _rot((0, 0, inward * d.get(f'foot_in_{s}', 0.0)))
+            foot_w = yaw_in @ _rot((d.get(f'foot_pitch_{s}', 0.0), 0, 0)) @ s_world[chain[2]]
+            pole = _rot((0, 0, inward * d.get(f'knee_in_{s}', 0.0))) @ (pelvis_r @ s_knee_pole[s])
+            _solve_chain(sk, local, root, chain, target, pole, foot_w)
         # Arms: hand targets ride with the chest.
         world, head = sk.fk(local, root)
         c = world[chest] @ sk.rest[chest].inverted()
         for s, chain in ARMS.items():
-            target = head[chest] + c @ (s_hand[s] + d.get(f'hand_{s}', Vector()))
+            local_t = s_hand[s] + d.get(f'hand_{s}', Vector())
+            if f'arm_{s}' in d:
+                # Straight-arm swing: direction from the shoulder (chest frame) at nearly full reach, blended
+                # with the stance fist by weight w.
+                direction, w = d[f'arm_{s}']
+                reach = s_shoulder[s] + direction.normalized() * arm_len[s] * 0.96
+                local_t = local_t.lerp(reach, w)
+            target = head[chest] + c @ local_t
             pole = c @ (s_elbow[s] - s_hand[s] * 0.5 + Vector((0.15 if s == 'L' else -0.15, 0.1, -0.1)))
             _solve_chain(sk, local, root, chain, target, pole)
         keys.append((local, root))
@@ -103,6 +116,8 @@ def _mirror_spec(d):
         k2 = k[:-2] + ('_R' if k.endswith('_L') else '_L') if k.endswith(('_L', '_R')) else k
         if isinstance(v, Vector):
             v = Vector((-v.x, v.y, v.z))
+        elif isinstance(v, tuple) and len(v) == 2:  # (direction, weight)
+            v = (Vector((-v[0].x, v[0].y, v[0].z)), v[1])
         elif isinstance(v, tuple) and len(v) == 3:
             v = (v[0], -v[1], -v[2])
         out[k2] = v
@@ -124,65 +139,81 @@ def ease_io(x):
     return x * x * (3 - 2 * x)
 
 
+def path(t, pts):
+    """Smooth piecewise path through (time, Vector) points; holds the end points outside."""
+    if t <= pts[0][0]:
+        return pts[0][1].copy()
+    for (t0, a), (t1, b) in zip(pts, pts[1:]):
+        if t <= t1:
+            return a.lerp(b, ease_io((t - t0) / (t1 - t0)))
+    return pts[-1][1].copy()
+
+
+def scalar(t, pts):
+    return path(t, [(k, Vector((v, 0, 0))) for k, v in pts]).x
+
+
 def two_step(t):
-    """One 2-step: hop on the left foot while the right leg swings forward and *across* in front of it
-    (crossing over to the left), then back. Hips turn into the cross, chest and arms swing against it.
-    Chained/held 2-steps alternate sides and form a continuous rhythm."""
-    swing = bump(t, 0.04, 0.9)
-    across = bump(t, 0.12, 0.85)
-    hop = bump(t, 0.12, 0.58)
-    land = bump(t, 0.55, 1.0)
+    """Hardcore 2-step (one side): whole-body bounce – hop on the left foot while the right leg turns inward and
+    swings in an arc across in front of the left leg, then back out. Hips shift over the support foot, the
+    torso rocks back on the hop and drives forward on the landing, arms swing hard against the legs."""
+    body = bump(t, 0.02, 0.98)
+    hop = bump(t, 0.1, 0.55)
+    land = bump(t, 0.5, 0.98)
+    foot = path(t, [(0.04, Vector()), (0.28, Vector((0.08, -0.3, 0.3))), (0.5, Vector((0.62, -0.42, 0.24))),
+                    (0.7, Vector((0.48, -0.1, 0.1))), (0.92, Vector()), ])
     return {
-        'pelvis': Vector((0.08 * swing, -0.05 * swing, 0.11 * hop - 0.07 * land)),
-        'pelvis_rot': (-0.06 * swing, -0.1 * swing, -0.45 * across),
-        'chest_rot': (0.12 * swing, 0.08 * swing, 0.62 * across),
-        # Right foot: forward, up and across the left leg (ends left of the left foot's line).
-        'foot_R': Vector((0.62 * across, -0.42 * swing, 0.34 * bump(t, 0.1, 0.8))),
-        'foot_pitch_R': -0.55 * swing,
-        'foot_L': Vector((0.02 * swing, 0.0, 0.12 * hop)),
-        # Arms swing against the legs: right arm drives back, left arm swings forward/down across.
-        'hand_R': Vector((-0.2 * swing, 0.5 * swing, -0.45 * swing)),
-        'hand_L': Vector((-0.28 * swing, -0.32 * swing, -0.38 * swing)),
+        'pelvis': Vector((0.13 * body, -0.04 * body, 0.13 * hop - 0.1 * land)),
+        'pelvis_rot': (-0.12 * hop + 0.12 * land, 0.12 * body, 0.32 * bump(t, 0.15, 0.8)),
+        'chest_rot': (-0.15 * hop + 0.3 * land, -0.12 * body, -0.55 * bump(t, 0.1, 0.85)),
+        'foot_R': foot,
+        'knee_in_R': 1.1 * bump(t, 0.08, 0.85),
+        'foot_in_R': 0.7 * bump(t, 0.1, 0.85),
+        'foot_pitch_R': -0.35 * bump(t, 0.15, 0.75),
+        'foot_L': Vector((0.03 * body, 0, 0.13 * hop)),
+        # Arms swing hard against the legs: left fist chops down across to the right, right arm whips back/out.
+        'arm_L': (path(t, [(0, Vector((0.3, -0.6, -0.6))), (0.45, Vector((-0.45, -0.6, -0.65))),
+                           (1, Vector((0.2, -0.5, -0.7)))]), 0.85 * body),
+        'arm_R': (path(t, [(0, Vector((-0.4, -0.5, -0.6))), (0.45, Vector((-0.75, 0.55, -0.4))),
+                           (1, Vector((-0.4, -0.3, -0.7)))]), 0.85 * body),
     }
 
 
-def _shoulder_circle(side, a, r, out0, out1):
-    """Hand offset (from the stance fist) on a circle around the shoulder. a = 0 top, a grows forward→down."""
-    out_x = side * (out0 + out1 * (1 - math.cos(a)) / 2)
-    return Vector((out_x, 0.22 - r * math.sin(a), r * math.cos(a) - 0.2))
-
-
 def arm_swing(t):
-    """Powerful backward arm swing: the right arm whips up the front, over the top and down behind the body
-    (full backward circle), the left arm punches forward/down against it, the torso twists and rocks with it.
-    Alternating presses mirror it (left arm swings)."""
-    env = ease_io(min(1.0, t / 0.12, (1 - t) / 0.16))
-    # Slow wind-up, fast whip through the top and back, slower recovery.
-    p = ease_io(min(1.0, max(0.0, (t - 0.05) / 0.8)))
-    # Angle on the shoulder circle: low in front (0.8 pi) → up the front → over the top (0) → low behind (-0.85 pi).
-    a = 0.8 * math.pi * (1 - p) - 0.85 * math.pi * p
-    hand_r = _shoulder_circle(-1, a, 0.62, 0.12, 0.25)
-    back = bump(t, 0.25, 1.0)
+    """Powerful backward arm swing, readable from behind: the straight right arm is thrown across the body,
+    whips out to the side, over the head and down behind; the left arm swings the opposite way. The torso
+    twists hard with the swing and the body dips. Alternating presses mirror it."""
+    w = ease_io(min(1.0, t / 0.1, (1 - t) / 0.14))
+    right = path(t, [(0.0, Vector((0.45, -0.6, -0.65))), (0.14, Vector((0.5, -0.6, -0.6))),
+                     (0.34, Vector((-1.0, -0.25, 0.05))), (0.5, Vector((-0.4, 0.1, 1.0))),
+                     (0.68, Vector((-0.55, 0.8, -0.2))), (0.86, Vector((-0.35, 0.35, -0.9))),
+                     (1.0, Vector((-0.3, 0.2, -0.9)))])
+    left = path(t, [(0.0, Vector((0.6, 0.55, -0.6))), (0.2, Vector((0.7, 0.6, -0.4))),
+                    (0.5, Vector((-0.2, -0.85, -0.45))), (0.75, Vector((0.9, -0.2, -0.3))),
+                    (1.0, Vector((0.6, 0.3, -0.7)))])
+    twist = scalar(t, [(0, 0), (0.14, 0.55), (0.5, -0.1), (0.72, -0.7), (1, -0.3)])
     return {
-        'pelvis': Vector((0, 0, -0.07 * env)),
-        'chest_rot': (0.25 * env - 0.3 * bump(t, 0.2, 0.6), 0.1 * back, -0.7 * back),
-        'hand_R': hand_r * env,
-        'hand_L': Vector((-0.18, -0.38, -0.32)) * bump(t, 0.15, 1.0),
+        'pelvis': Vector((0, 0, -0.09 * bump(t, 0.2, 0.9))),
+        'pelvis_rot': (0, 0, 0.25 * twist * w),
+        'chest_rot': (0.15 * w, -0.15 * bump(t, 0.35, 0.75), twist * w),
+        'arm_R': (right, w),
+        'arm_L': (left, 0.9 * w),
     }
 
 
 def windmill(t):
-    """Forward windmill: both arms circle forward (up behind, over the top, down the front), alternating,
-    with the torso pumping forward on every down-stroke and twisting with the arms."""
-    env = ease_io(min(1.0, t / 0.12, (1 - t) / 0.14))
+    """Forward windmill with straight arms: both arms circle forward (up behind, over the top, down the front),
+    alternating, in planes tilted outwards so they read from behind; the torso pumps on every down-stroke."""
+    env = ease_io(min(1.0, t / 0.1, (1 - t) / 0.12))
     th = 2 * math.pi * 2 * t
     a = th + 0.45 * math.sin(th)  # faster on the down-stroke = power
     out = {
-        'pelvis': Vector((0, 0, (-0.06 + 0.035 * math.cos(2 * th)) * env)),
-        'chest_rot': ((0.25 + 0.15 * math.sin(2 * th)) * env, 0, 0.45 * env * math.sin(th)),
+        'pelvis': Vector((0, 0, (-0.07 + 0.04 * math.cos(2 * th)) * env)),
+        'chest_rot': ((0.3 + 0.15 * math.sin(2 * th)) * env, 0, 0.45 * env * math.sin(th)),
     }
     for s, phase, side in (('L', 0.0, 1), ('R', math.pi, -1)):
-        out[f'hand_{s}'] = _shoulder_circle(side, a + phase, 0.6, 0.16, 0.34) * env
+        aa = a + phase
+        out[f'arm_{s}'] = (Vector((side * 0.55, -math.sin(aa), math.cos(aa))), env)
     return out
 
 
