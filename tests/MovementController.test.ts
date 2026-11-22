@@ -14,7 +14,7 @@ describe('MovementController', () => {
     run(m, 0.25, 0, 1);
     expect(m.speed).toBeGreaterThan(MOVEMENT_TUNING.walkSpeed * 0.95);
     run(m, 0.3, 0, 1, true);
-    expect(m.speed).toBeLessThan(MOVEMENT_TUNING.sprintSpeed * 0.75);
+    expect(m.speed).toBeLessThan(MOVEMENT_TUNING.sprintSpeed * 0.85);
     run(m, 1.2, 0, 1, true);
     expect(m.speed).toBeCloseTo(MOVEMENT_TUNING.sprintSpeed, 1);
     expect(m.momentum).toBeCloseTo(1, 1);

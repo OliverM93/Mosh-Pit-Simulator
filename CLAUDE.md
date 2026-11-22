@@ -33,9 +33,9 @@ npm run build        # Produktions-Build nach dist/
 src/core        Mathe, RNG, EventBus (keine Abhängigkeiten)
 src/data        Reine Daten: moves.ts, songs/, venues.ts, comboBonuses.ts, appearance.ts (Outfits/Looks)
 src/audio       SongTimeline (pur), SongClock, SongPlayer (Synth/File), instruments, Sfx, AudioEngine
-src/gameplay    Headless Logik: MoveSystem, MoveResolver, ComboSystem, HypeMeter, Player, crowd/CrowdSim, PitSession, modes
-src/animation   pose.ts (Pose-Format), clips.ts (Keyframes), Animator (Überblendung)
-src/render      Three.js: Renderer (PS1-Post), ps1.ts, textures.ts, CharacterRig, CrowdRenderer, VenueBuilder, StageLights, CameraController, PlayerView, SceneView
+src/gameplay    Headless Logik: MovementController, MoveController, ComboManager, BeatManager, HypeMeter, crowd/CrowdSim, PitSession
+src/animation   pose.ts, clips.ts (Keyframe-Quelle für die Blender-Pipeline)
+src/render      Three.js: Renderer, ps1.ts, textures.ts, characters (GLB), AnimationController, SkinnedCrowdRenderer, VenueBuilder, StageLights, CameraController, PlayerView, SceneView
 src/input       bindings.ts (Tastenbelegung als Daten), InputManager
 src/ui          Hud, Menu (Screen-Framework), screens, styles.css
 src/save        SaveSystem (versioniert)
@@ -52,10 +52,10 @@ docs/           Dokumentation (deutsch)
    `src/input/bindings.ts`. Logik nur ändern, wenn ein neues *Konzept* dazukommt.
 3. **Song-Zeit ist die Wahrheit.** Timing kommt aus Song-Metadaten (`SongTimeline`), die Uhr aus dem AudioContext
    (`SongClock`). Keine Audioanalyse. Tastendrücke tragen Event-Zeitstempel, nicht Frame-Zeit.
-4. **Groove-Modell (D-026).** Moves laufen in natürlicher Länge; Timing zum Beat ist nur Bonus. Risiko ist
-   räumlich (Crash bei großen Moves ins Gedränge), nicht rhythmisch.
-5. **Tuning-Werte gebündelt:** `SCORING` (ComboSystem), `MOVE_TUNING`, `SESSION_TUNING`, `PLAYER_TUNING`,
-   `CROWD_TUNING`, `HYPE_TUNING`, `TIMING_WINDOWS`. Keine Magic Numbers verstreut einbauen.
+4. **THPS statt Rhythmusspiel (D-028).** Movement, Moves, Combo, Animation und Musik sind getrennte Controller.
+   Die Animation folgt der Logik (Clip-Zeit = Move-Fortschritt). Musik gibt nur Boni. Risiko ist räumlich.
+5. **Tuning-Werte gebündelt:** `COMBO_TUNING`, `MOVE_TUNING`, `MOVEMENT_TUNING`, `BEAT_TUNING`, `SESSION_TUNING`,
+   `CAMERA_TUNING`, `CROWD_TUNING`, `HYPE_TUNING`. Keine Magic Numbers verstreut einbauen.
 6. **Keine Fremd-Assets ohne geklärte Lizenz.** Texturen/Musik/SFX sind prozedural (siehe `docs/ASSET_PIPELINE.md`).
 7. **Performance:** Figuren sind geskinnte Blender-Modelle (D-025/D-027) mit geteilter Geometrie/Clips; neue
    Crowd-Features dürfen keine *zusätzlichen* Draw-Calls pro NPC erzeugen. Dreiecksbudget im Blick behalten (≈ 1 Mio./Frame).
@@ -90,22 +90,22 @@ Nach jeder größeren Aufgabe:
   den jeweiligen Systemen. Neue Abhängigkeiten in `TECHNICAL_ARCHITECTURE.md` dokumentieren.
 - Nichts Wichtiges nur im Chat lassen. Keine Funktionen dokumentieren, die nicht existieren.
 
-## Aktueller Stand (2026-11-21)
+## Aktueller Stand (2026-11-22)
 
-Phase 1 abgeschlossen; Phase 2 (Gameplay Polish) läuft: Groove-Modell (D-026), echte geskinnte Blender-Figuren mit
-Motion Capture für Spieler/Crowd/Band (D-025/D-027, `tools/blender/`, `public/models/`), Grafikstufen PS1/PS2/HD.
-Ein Venue, drei Synth-Songs (Originalmusik folgt), 11 Moves, 56 Tests. Siehe `docs/ROADMAP.md` und `docs/SESSION_HANDOFF.md`.
+**MOSH PIT 2.0** (D-028, Branch `claude/mosh-pit-2-prototype`): THPS-artiger Prototyp – eine Location, Blender-Spieler
+mit Mocap, Chase-Kamera, Momentum-Movement, sechs Moves (hybride Eingabe, Ebenen, Phasen, Cancel-Fenster),
+Combo-Timer, ein Testsong. Plan/Analyse: `docs/PROTOTYPE_2.md`. Alter Stand als Referenz: `claude/laughing-bell-msxkz3`.
 
 ## Wichtige Entscheidungen (Kurzfassung, Details in `docs/DECISIONS.md`)
 
 - TS + Three.js + Vite; Gameplay headless und getestet.
-- Timing aus Song-Metadaten + AudioContext-Uhr; Timing nur als Bonus, Crash statt Miss-Bail (D-026).
-- Combo wird nach einer kurzen Pause (Chain Window) kassiert, nicht beim Landen.
+- Kein Rhythmusspiel (D-028): Musik nur als Bonus; Timing aus Song-Metadaten + AudioContext-Uhr.
+- Combo-Timer wie THPS: jeder Move füllt ihn auf, leer → Combo wird kassiert; Bail verliert sie.
 - Musik, SFX und Texturen prozedural – keine Lizenzrisiken.
 - Noch keine Lizenzdatei (Entscheidung des Owners steht aus).
 
 ## Weiterführend
 
 `README.md` · `CONTRIBUTING.md` · `CHANGELOG.md` · `docs/PROJECT_VISION.md` · `docs/GAME_DESIGN.md` ·
-`docs/COMBO_SYSTEM.md` · `docs/AUDIO_AND_MUSIC.md` · `docs/TECHNICAL_ARCHITECTURE.md` · `docs/ART_DIRECTION.md` ·
+`docs/PROTOTYPE_2.md` · `docs/COMBO_SYSTEM.md` · `docs/AUDIO_AND_MUSIC.md` · `docs/TECHNICAL_ARCHITECTURE.md` · `docs/ART_DIRECTION.md` ·
 `docs/ASSET_PIPELINE.md` · `docs/ROADMAP.md` · `docs/DECISIONS.md` · `docs/SESSION_HANDOFF.md`

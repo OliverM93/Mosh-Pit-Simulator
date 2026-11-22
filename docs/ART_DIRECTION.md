@@ -1,7 +1,9 @@
 # Art Direction
 
 > **Stand D-025/D-027:** Figuren sind jetzt geskinnte Blender-Modelle (MakeHuman-Körper, gebackene + gemalte
-> Texturen, Mocap). Die Abschnitte zu Atlas-Figuren unten beschreiben den Fallback (`CrowdRenderer`).
+> Texturen, Mocap). Die Atlas-/Box-Rig-Figuren unten wurden mit 2.0 entfernt (Referenz-Branch).
+> **Ziel ab 2.0 (D-028):** detaillierter PS2-Retro-Look nach THUG2, Def Jam: Fight for NY, GTA San Andreas –
+> keine extrem reduzierten Modelle; Haare, Kleidung, Proportionen und Venue brauchen deutlich mehr Details.
 
 **Leitbild:** Ein PS1/PS2-Spiel, das man 2001 aus der Videothek geliehen hätte – dunkel, laut, schwitzig, ein
 bisschen albern. Rendering-Artefakte der Ära (wackelnde Vertices, Dithering, grobe Texturen, Nebel) sind Stilmittel,

@@ -3,7 +3,7 @@ import { clamp, dampAngle, length2, lerp, wrapAngle } from '../core/math';
 export const MOVEMENT_TUNING = {
   radius: 0.33,
   walkSpeed: 3.1,
-  sprintSpeed: 6.2,
+  sprintSpeed: 5.8,
   /** Acceleration up to walking speed, and beyond it while sprinting (run-up builds slowly). */
   accel: 16,
   sprintAccel: 4.5,
@@ -158,6 +158,34 @@ export class MovementController {
     this.stride += length2(vx, vz) * dt;
 
     if (!mod?.lockFacing && this.speed > 0.15) this.yaw = dampAngle(this.yaw, this.heading, T.faceRate, dt);
+  }
+
+  /**
+   * Keep the body inside a circle (the pit wall of people). Running into it
+   * bounces the heading along the wall and costs speed – no getting lost in the crowd.
+   */
+  clampCircle(cx: number, cz: number, r: number): boolean {
+    const dx = this.x - cx;
+    const dz = this.z - cz;
+    const d = Math.hypot(dx, dz);
+    if (d <= r || d < 1e-6) return false;
+    const nx = dx / d;
+    const nz = dz / d;
+    this.x = cx + nx * r;
+    this.z = cz + nz * r;
+    const vx = this.vx;
+    const vz = this.vz;
+    const out = vx * nx + vz * nz;
+    if (out > 0) {
+      // Remove the outward part of the velocity, keep sliding along the wall.
+      const tx = vx - nx * out;
+      const tz = vz - nz * out;
+      const along = Math.hypot(tx, tz);
+      if (along > 0.3) this.heading = Math.atan2(tx, tz);
+      this.speed = along * 0.85;
+      this.sideVX = this.sideVZ = 0;
+    }
+    return true;
   }
 
   /** Keep the body inside an axis-aligned rectangle; kills speed into walls. */

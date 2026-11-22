@@ -53,6 +53,8 @@ export const SESSION_TUNING = {
   sketchyCount: 2,
   sketchyRadius: 0.6,
   impactStrength: 1.2,
+  /** The player stays this far inside the crowd's (breathing) pit radius. */
+  pitWallMargin: 0.45,
   /** Visual air height for camera/shadow (the clip itself lifts the body). */
   airHeight: 0.5,
   hypePerDifficulty: 0.035,
@@ -81,6 +83,8 @@ export class PitSession {
   ended = false;
   /** Smoothed 0..1 energy (music + hype) for crowd, lights and camera. */
   energy = 0;
+  /** Touching the wall of people this step. */
+  wallContact = false;
   /** Momentum at the start of the running full-body move (scored on landing). */
   private startMomentum = new Map<number, number>();
 
@@ -147,6 +151,9 @@ export class PitSession {
     });
     const push = this.crowd.resolvePlayer(mv.x, mv.z, 0.33);
     mv.push(push.dx, push.dz);
+    const pit = this.venue.pit;
+    if (mv.clampCircle(pit.x, pit.z, this.crowd.pitRadius - SESSION_TUNING.pitWallMargin)) this.wallContact = true;
+    else this.wallContact = false;
     const { width, depth } = this.venue.room;
     mv.clampTo(-width / 2, width / 2, -depth / 2 + this.venue.stage.depth + 0.25, depth / 2);
 

@@ -1,5 +1,9 @@
 # Game Design
 
+> **Hinweis (2026-11-22):** Für den Prototyp MOSH PIT 2.0 gilt [PROTOTYPE_2.md](PROTOTYPE_2.md) (D-028).
+> Dieses Dokument beschreibt die Gesamtvision; Abschnitte zu Rhythmus-Bewertung, Modi und Song-Auswahl sind bis
+> zur Überarbeitung nach dem Prototyp nicht aktiv.
+
 Stand: Phase 1. Markierungen: ✅ implementiert · 🟡 teilweise · 📋 geplant.
 Zahlen und Formeln des Combo-Systems stehen in [COMBO_SYSTEM.md](COMBO_SYSTEM.md).
 

@@ -47,9 +47,9 @@ Browser-APIs: WebGL 2, Web Audio, Gamepad API, Pointer Lock, localStorage. Node 
 ## Zentrale Datenstrukturen
 
 - `SongDefinition` → `SongTimeline` (`ResolvedSection`, `ResolvedEvent`, `PulseInfo`) – siehe AUDIO_AND_MUSIC.md
-- `MoveDefinition` (Daten) → `ActiveMove` (laufende Instanz mit Start/Ende/Anker/Rating/Spiegelung)
-- `ComboState` (Pool, Multiplikator, Einträge, Nutzungszähler, Kategorien) → `BankResult`
-- `SessionStats` (Moves, Ratings, Bails, beste/längste Combo, Drop-Hits)
+- `MoveDefinition` (Daten: Kategorie, Ebene, Dauer, Clip-Ausschnitt, Phasen, Cancel-Fenster, Bewegungseinfluss)
+  → `ActiveMove` (Start/Ende, Spiegelung, linked/layered/landed)
+- `ComboManager` (Basis, Multiplikator, Timer, Einträge mit Tags) → `BankResult`, `ComboStats`
 - `CrowdAgent` (Rolle, Position, Zustand, Clip + Phase, Aussehen)
 - `VenueDefinition` (Raum, Bühne, Pit, Crowd-Zusammensetzung, Look)
 - `Pose` = `Float32Array` (6 Root-Kanäle + 10 Gelenke × 3 Euler-Winkel)
@@ -62,11 +62,11 @@ Browser-APIs: WebGL 2, Web Audio, Gamepad API, Pointer Lock, localStorage. Node 
 1. `dt` = Frame-Zeit (max. 50 ms).
 2. `InputManager.poll()` → Achsen + zeitgestempelte `ButtonEvent`s.
 3. Events routen: im Spiel `pause`/`help`, in Menüs an den aktiven `MenuScreen` (eine physische Taste löst max.
-   eine Aktion aus, z. B. Space = jump *oder* confirm).
-4. Spielen: `SongClock.sync()` → `songTime`. Move-Knöpfe → `MoveRequest` mit `pressTime = clock.timeAt(event.time)`.
+   eine Aktion aus, z. B. Space = acro *oder* confirm).
+4. Spielen: `SongClock.sync()` → `songTime`. Move-Knöpfe → `MovePress` mit `time = clock.timeAt(event.time)`.
 5. `PitSession.update(dt, songTime, input)` in **60-Hz-Unterschritten** (Song-Zeit interpoliert):
-   Musik-Events (Sektion/Beat/Puls/Beatdrop) → Presses → `MoveSystem` → Scoring/Hype → Spielerphysik →
-   Crowd-Simulation + Kollision → Chain-Window/Banking → Song-Ende.
+   Musik-Events (Sektion/Beat/Beatdrop) → Presses → `MoveController` → Scoring/Hype → `MovementController` →
+   Crowd-Simulation + Kollision (Pit-Wand) → Combo-Timer/Banking → Song-Ende.
 6. `SceneView.update()` (Kamera, Licht, Spieler-Animation, Crowd-Instancing, Partikel), `Hud.update()`, Ambience.
 7. `Renderer.render()`: Szene → Low-Res-Target → Post-Pass auf den Bildschirm.
 
@@ -75,34 +75,35 @@ Zustände: `title → menu → loading → playing ⇄ paused → ending → res
 
 ## Input-System
 
-- `src/input/bindings.ts`: Tabellen Taste/Gamepad-Knopf → abstrakte `ButtonAction`s (`step`, `arms`, `kick`,
-  `floor`, `jump`, `pause`, `confirm`, `back`, `up/down/left/right`, `help`). Eine Taste darf mehrere Aktionen tragen.
+- `src/input/bindings.ts`: Tabellen Taste/Gamepad-Knopf → abstrakte `ButtonAction`s (`footwork`, `arms`, `kick`,
+  `acro`, `pause`, `confirm`, `back`, `up/down/left/right`, `help`). Eine Taste darf mehrere Aktionen tragen.
 - `InputManager`: Tastatur über DOM-Events (`event.code` → layoutunabhängig, `timeStamp` für Timing), Maus über
   Pointer Lock, Gamepads per Polling (Standard-Mapping, Deadzone 0,18, Kanten-Erkennung, `gamepad.timestamp`).
-- `MoveResolver`: (Knopf, Richtung, in der Luft?) → `MoveDefinition`; spezifischste Richtung gewinnt.
-  `classifyDirection()` teilt den kamerarelativen Stick in neutral/vor/zurück/seitlich (+ links/rechts).
+- Move-Tasten sind Kategorien (`footwork`, `arms`, `kick`, `acro`); `MoveController.resolve()` wählt den Move aus
+  Kategorie + Situation (Stick seitlich, Tempo). Der kamerarelative Stick geht roh (`stickX/Y`) und in Weltkoordinaten mit.
 - Neue Moves/Kombinationen = Daten; neue Geräte = Bindings-Tabelle + Polling im `InputManager`.
 
-## Move-System (`MoveSystem`)
+## Move-System (`MoveController`)
 
-Zustandsmaschine: idle → Move → (Puffer/Cancel) → nächster Move | Bail → Erholung. Move-Ende =
-`nächsterPuls(Start) + n × Puls` (n = gerundete natürliche Dauer). Hop→Air-Konvertierung verlängert bis zum
-nächsten passenden Puls. Liefert Events (`start`, `convert`, `end`, `bail`, `recover`) an `PitSession`.
+Zwei Ebenen (`full`, `upper`). Ein Move läuft seine `duration` (Song-Sekunden); `air` definiert Absprung/Luft/Landung
+(Event `land`), `cancelFrom`/`cancelInto` das Cancel-Fenster, Drücke bis `bufferSec` vorher werden gepuffert. `bail()`
+stoppt alles für `bailSec`. Events (`start`, `land`, `end`, `bail`) gehen an `PitSession`.
 
 ## Animationssystem
 
-- **Rig:** `CharacterRig` – Hierarchie aus Gruppen (Root → Body → Spine/Hüften → Nacken, Schultern, Ellbogen, Knie).
-  Körperteile (`characterParts.ts`, 28 Teile inkl. Varianten wie Cap/Beanie/Haare/Ärmel und Gitarre) sind
-  Low-Poly-Meshes mit Pivot am Gelenk. Aussehen ist reine Datenlage (`src/data/appearance.ts`), `resolveLook()`
-  übersetzt es in Sichtbarkeit, Farbe und Atlas-Zelle pro Teil.
-- **Posen/Clips:** `clips.ts` enthält handgebaute Keyframes (normierte Zeit 0..1, Easing pro Segment) für alle Moves,
-  Fortbewegung, Crowd-Verhalten und Band. Sparse Specs werden auf eine Basispose gelegt und vorkompiliert.
-- **Wiederverwendung:** Spiegelung (`mirrorPose`) erzeugt Links/Rechts-Varianten; derselbe Clip läuft beim Spieler,
-  bei NPC-Dancern und in Varianten.
-- **Treiber:** Move-Clips folgen dem Move-Fortschritt (Song-Zeit), Loops der Beat-Phase, Reaktionen der Echtzeit.
-  Dadurch sind alle Animationen musiksynchron.
-- **Überblendung:** `Animator` blendet bei jedem neuen Clip-*Instanz*-Schlüssel (50–180 ms, Smoothstep) und wickelt
-  Winkel vorher auf den kürzesten Weg ab (keine 360°-Rückdrehungen nach Spins).
+- **Figuren:** geskinnte GLBs aus `tools/blender/` (D-025), Clips in `anims.glb` (Mocap + umgerechnete Keyframe-Clips
+  aus `src/animation/clips.ts`, die nur noch als Datenquelle der Pipeline dienen).
+- **Spieler (`AnimationController`, D-028):** Unter- und Oberkörper mischen getrennt gewichtete Quellen (normalisiert).
+  Quelle = Move-Clip (Zeit aus Move-Fortschritt und `clipRange`) oder Locomotion (Idle/Walk/Run nach Tempo, gemeinsame
+  Zyklusphase). Neue Quellen blenden über 0,06–0,5 s ein. Arm-Moves laufen nur auf dem Oberkörper.
+- **Crowd (`SkinnedCharacter`):** ein Clip pro Figur mit Überblendung, Phase aus `CrowdSim`.
+
+## Gameplay-Architektur MOSH PIT 2.0 (D-028)
+
+`PitSession` verbindet: `MovementController` (Momentum) · `MoveController` (Moves, Ebenen, Phasen, Cancel, Puffer) ·
+`ComboManager` (Punkte, Timer) · `BeatManager` (Musik-Events/Boni) · `CrowdSim` · `HypeMeter`. Render-seitig
+setzt `PlayerView` den Zustand in `AnimationController`-Ebenen um (Unterkörper: Move oder Locomotion-Mischung,
+Oberkörper: Arm-Overlay oder dasselbe). Details: [PROTOTYPE_2.md](PROTOTYPE_2.md).
 
 ## Rendering
 
@@ -112,11 +113,6 @@ nächsten passenden Puls. Liefert Events (`start`, `convert`, `end`, `bail`, `re
   Snapping, Farbstufen, Dithering, Scanlines live; das Figuren-Detail (Segmentzahl, `partGeometries(detail)`, pro
   Stufe gecacht) greift beim nächsten Szenenaufbau (nächster Song bzw. sofort im Menü-Hintergrund).
 - `ps1.ts`: `onBeforeCompile`-Patch für Lambert/Basic-Materialien → Vertex-Snapping auf das Low-Res-Pixelraster.
-- `CrowdRenderer` (Fallback): **ein `InstancedMesh` pro Körperteil** für Crowd + Band (28 Draw Calls total, unabhängig von der
-  Crowd-Größe). Pro Agent wird die Pose auf ein unsichtbares Scratch-Rig gelegt und die Teil-Matrizen kopiert;
-  Farbe per `instanceColor`, Textur-Atlas-Zelle per Instanz-Attribut `instanceAtlas` (Shader-Patch in `ps1.ts`).
-  Nicht getragene Varianten bekommen eine Null-Matrix. Der Spieler nutzt dieselben Teile mit Einzelmaterialien.
-  Agenten auf der Sichtlinie Kamera→Spieler und direkt vor der Kamera werden ausgeblendet.
 - **Geskinnte Figuren (D-025/D-027, Standard):** `characters.ts` lädt `public/models/anims.glb` (Skelett + alle
   Clips) und `char_<variante>.glb` (Spieler + 8 Crowd-Varianten). Clips werden per Knochenname gebunden; nur
   Rotations-Tracks plus die Root-Position (auf die Hüfthöhe der Variante umgerechnet) werden genutzt.
@@ -124,7 +120,7 @@ nächsten passenden Puls. Liefert Events (`start`, `convert`, `end`, `bail`, `re
   Actions desselben Clips; `setPhase()` setzt die Clip-Zeit aus dem Gameplay-Fortschritt (`timeScale = 0`).
   `SkinnedCrowdRenderer` erzeugt eine Figur pro Agent (Variante per ID, Band mit festen Varianten + Gitarren-Mesh),
   `PlayerView` nutzt die Spieler-Variante. Schatten: Spot-Licht über dem Pit (PS2/HD), nur der Spieler wirft Schatten.
-  Fallback auf die Instanced-Figuren unten, wenn die Modelle nicht laden.
+  Ohne Modelle startet das Spiel nicht (Hinweis im Menü); die Box-Rig-Figuren wurden mit 2.0 entfernt.
 - `VenueBuilder` (statische Geometrie aus `VenueDefinition`), `StageLights` (4 Punktlichter, Kegel, Rauch),
   `CameraController` (Orbit, Raum-/Decken-Clamping, Shake, FOV-Kick), `PlayerView`, `Particles`, `SceneView`.
 

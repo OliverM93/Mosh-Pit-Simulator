@@ -2,14 +2,14 @@
 
 > Tony Hawk's Pro Skater – nur eben im Hardcore-Moshpit.
 
-Ein 3D-Arcade-Spiel im PS1/PS2-Look: Du stehst im Pit eines verschwitzten Kellerclubs, tanzt zur Musik
-2-Steps, Spinkicks, Cartwheels und Butterfly Kicks – im Takt, ohne Pause, ohne dich zu wiederholen. Lange,
-abwechslungsreiche Combos bringen Punkte, die Crowd geht mit, und wer gegen den Beat drückt, landet auf dem
-Hintern.
+Ein 3D-Arcade-Spiel im PS2-Retro-Look: Du bewegst dich frei durch den Pit eines verschwitzten Kellerclubs und
+verkettest 2-Steps, Windmills, Spinkicks, Cartwheels und Butterfly Kicks zu langen Combos – mit Momentum, sauberen
+Übergängen und Landungen wie in Tony Hawk's Pro Skater. Kein Rhythmusspiel: Die Musik gibt Boni, sie schreibt
+nichts vor.
 
 ![Gameplay: Breakdown im Kellerclub](docs/images/gameplay-breakdown.jpg)
 
-**Status:** Phase 1 (Core Prototype) – spielbar im Browser. Details: [docs/ROADMAP.md](docs/ROADMAP.md).
+**Status:** Prototyp MOSH PIT 2.0 (Branch `claude/mosh-pit-2-prototype`) – spielbar im Browser. Plan: [docs/PROTOTYPE_2.md](docs/PROTOTYPE_2.md).
 
 ## Schnellstart
 
@@ -37,34 +37,34 @@ Ins Bild klicken, um die Maus für die Kamera zu fangen.
 
 ## Steuerung
 
-| Aktion                         | Tastatur / Maus          | Gamepad              |
-| ------------------------------ | ------------------------ | -------------------- |
-| Bewegen                        | WASD                     | linker Stick         |
-| Kamera                         | Maus (Klick = fangen)    | rechter Stick        |
-| Sprint (Anlauf-Bonus)          | Shift                    | RT / LT              |
-| Steps: 2-Step / Crowd Push     | Q / W+Q                  | X / ↑+X              |
-| Arms: Forward / Side / Change  | E / A,D+E / S+E          | Y / ←→+Y / ↓+Y       |
-| Kick: Spinkick                 | R                        | B                    |
-| Floor: Floorwork / Cartwheel   | F / A,D+F                | RB / ←→+RB           |
-| Sprung, in der Luft: Tornado / Butterfly | Space, dann R / F | A, dann B / RB  |
-| Move-Liste ein/aus             | H                        | Back                 |
-| Pause                          | Esc / P                  | Start                |
+| Aktion                    | Tastatur / Maus        | Gamepad       |
+| ------------------------- | ---------------------- | ------------- |
+| Laufen                    | WASD                   | linker Stick  |
+| Sprint / Anlauf           | Shift                  | RT / LT       |
+| Footwork (2-Step)         | Q                      | X             |
+| Arms (Windmill, auch im Laufen/2-Step) | E         | Y             |
+| Kick: Spinkick / mit Anlauf Tornado Kick | R       | B             |
+| Acro: Butterfly Kick / seitlich Cartwheel | Space  | A             |
+| Kamera umsehen            | Maus (Klick = fangen)  | rechter Stick |
+| Move-Liste ein/aus        | H                      | Back          |
+| Pause                     | Esc / P                | Start         |
 
-**Grundregeln:** Verkette Moves ohne Pause – jeder Move erhöht den Multiplikator, eine kurze Pause kassiert die
-Combo. Moves auf dem Beat (die Striche treffen sich in der Raute) geben Bonus, daneben kostet nichts. Wiederholungen
-bringen immer weniger, verschiedene Move-Stile geben Bonus. Breakdowns und Heavy Parts verdoppeln Kicks und Air-Moves.
-Wer einen großen Move ins Gedränge setzt, **crasht** – die ganze Combo ist weg.
+**Grundregeln:** Jeder Move bringt Punkte und +1 Multiplikator. Der Balken unter der Combo ist der Combo-Timer:
+jeder Move füllt ihn auf, läuft er leer, wird die Combo kassiert (Punkte × Multiplikator × Abwechslung). Direkt
+anschließen (CLEAN), mit Tempo in große Moves gehen (MOMENTUM), sauber landen, Arme über 2-Steps legen (LAYERED).
+Wiederholungen bringen immer weniger. Breakdowns/Heavy Parts und Moves auf dem Beat geben Bonus. Wer einen Kick ins
+Gedränge setzt, stürzt – die laufende Combo ist weg.
 
-## Was ist drin (Phase 1)
+## Was ist drin (Prototyp 2.0)
 
-- 3 selbst synthetisierte Platzhalter-Songs (Hardcore, Beatdown, Hardcore-Punk) mit Intro/Verse/Chorus/Breakdown/Heavy/Outro
-- 11 Moves inkl. Air-Moves, Animationen mit Überblendung
-- Combo-System nach THPS-Vorbild: Pool × Multiplikator, Wiederholungs-Abzug, Signature-Combos, Hype-Meter mit Frenzy
-- Groove-Modell: Timing als Bonus (On Beat / Good / Okay), Beatdrop-Bonus, Crash bei großen Moves ohne Platz
-- Lebendige Crowd: Pit-Wand, die sich im Breakdown öffnet, 2-Stepper, Pit-Ninjas, Crowd-Surfer, Band auf der Bühne
-- Venue „The Basement“ (Kellerclub), PS1-Look mit Vertex-Jitter, Dithering, Nebel, Strobo
-- Modi: **Arcade** und **Free Pit**; Highscores und Einstellungen werden lokal gespeichert
-- Tastatur/Maus und Gamepad
+- Eine Location (The Basement), ein detaillierter Spieler (Blender-Figur mit Motion Capture), Crowd und Band
+- Momentum-Movement, Third-Person-Kamera, sechs Moves mit hybridem Eingabesystem, Ebenen und Cancel-Fenstern
+- Combo-System mit Timer nach THPS-Vorbild ([docs/COMBO_SYSTEM.md](docs/COMBO_SYSTEM.md))
+- Ein synthetisierter Testsong mit Breakdowns und Beatdrops (Platzhalter bis zur Originalmusik)
+- Tastatur/Maus und Gamepad; Highscore und Einstellungen lokal gespeichert
+
+Der Stand vor 2.0 (Phase 1, Rhythmus-/Groove-Mechanik, mehrere Songs und Modi) liegt als Referenz auf dem Branch
+`claude/laughing-bell-msxkz3`.
 
 ## Projektstruktur
 

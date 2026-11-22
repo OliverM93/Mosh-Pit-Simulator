@@ -47,7 +47,7 @@ export const MOVES: MoveDefinition[] = [
     name: 'Tornado Kick',
     category: 'kick',
     layer: 'full',
-    when: { minSpeed: 4.2 },
+    when: { minSpeed: 4 },
     duration: 1.05,
     clip: 'tornado_kick',
     clipRange: [0.3, 1],

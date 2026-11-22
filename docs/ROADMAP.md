@@ -21,14 +21,26 @@ Ziel: Ein Song ist vollständig spielbar und fühlt sich wie ein kleiner Arcade-
 - ✅ Modi Arcade + Free Pit, Ergebnisbildschirm mit Note, Highscore/Best Combo gespeichert
 - ✅ Gamepad-Unterstützung (Standard-Mapping) – ⚠ noch nicht mit echter Hardware getestet
 
-## Phase 2 – Gameplay Polish 🟡 (nächste Phase)
+## MOSH PIT 2.0 – Prototyp (aktuell, D-028)
+
+- ✅ Analyse + Plan ([PROTOTYPE_2.md](PROTOTYPE_2.md))
+- ✅ Movement Controller (Momentum, Kurven, Skid, Sprint/Anlauf), Third-Person-Kamera (folgt Laufrichtung)
+- ✅ Move Controller: 6 Moves, hybride Eingabe, Ebenen (Arme über Footwork), Phasen, Cancel-Fenster, Puffer
+- ✅ Animation Controller: Ober-/Unterkörper-Ebenen, Idle/Walk/Run-Mischung, kurze Überblendungen
+- ✅ Combo Manager mit Timer + HUD; Beat Manager (On Beat, Breakdown/Heavy, Drop-Hit)
+- ⬜ Playtest durch den Owner auf echter Hardware → Tuning (Tempo, Kurven, Cancel-Fenster, Timer, Punkte)
+- ⬜ Grafik-Qualität Richtung THUG2 / Def Jam FFNY / GTA SA: Haare, Kleidung, Proportionen, Venue-Details, Licht
+- ⬜ Aufsteh-Animation nach Bail, eigene Clips für High Kick / Jump Kick / Shuffle / Running Steps / Side Steps
+- ⬜ Echter Testsong (Originalmusik des Owners) mit Breakdown-Markern
+
+## Phase 2 – Gameplay Polish (vor 2.0, Referenz) 🟡 (nächste Phase)
 
 - ✅ **Echte Figuren + Motion Capture im Spiel (D-025/D-027):** Spieler + 8 Crowd-Varianten aus Blender (MakeHuman CC0),
   texturiert mit Gesichtern; 36 Clips (CMU-Mocap + umgerechnete Keyframe-Clips, gespiegelte Varianten);
   Überblendungen, Schatten (PS2/HD), Crowd-LOD.
   Offen: Performance auf echter GPU messen; Aufstehen nach dem Bail (aktuell harte Überblendung aus dem Liegen);
   Merch-Logos aus `user-content` erscheinen noch nicht auf den neuen Figuren; Shirt-Säume teils ausgefranst
-- 🟡 Eigene Songs/Logos aus `public/user-content/` (Code + Tests da, Browser-Test und Doku offen)
+- 🟡 Eigene Songs/Logos aus `public/user-content/`: Loader mit 2.0 entfernt; Parser und BPM-Erkennung (`src/data/userSongs.ts`, `src/audio/tempo.ts`) bleiben für den echten Testsong
 - ✅ Grafikstufen PS1 / PS2 / HD (Standard PS2) in den Einstellungen
 - ✅ Figuren-Look überarbeitet: glatt schattierte Low-Poly-Charaktere im Stil später 90er-3D-Fighter statt Quader,
   Kleidung/Tattoos/Gesichter per Atlas, Looks nach Referenzfotos des Owners

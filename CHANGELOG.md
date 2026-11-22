@@ -5,6 +5,19 @@ Versionierung nach [SemVer](https://semver.org/lang/de/) (vor 1.0 kann sich alle
 
 ## [Unreleased]
 
+### MOSH PIT 2.0 – Prototyp (Branch `claude/mosh-pit-2-prototype`, D-028)
+
+- Neues Spielgefühl nach Tony Hawk's Pro Skater statt Rhythmusspiel: Momentum-Bewegung mit Kurvenradius, Skid und
+  Anlauf; Third-Person-Kamera folgt der Laufrichtung.
+- Hybrides Move-System: eine Taste pro Kategorie (Footwork, Arms, Kick, Acro), Richtung und Tempo wählen den Move.
+  Sechs Moves: 2-Step, Windmill Arms, Spinkick, Tornado Kick (mit Anlauf), Cartwheel (seitlich), Butterfly Kick.
+- Arme lassen sich über Laufen und 2-Steps legen (Ober-/Unterkörper-Animationsebenen).
+- Absprung-, Flug- und Landephasen; Cancel-Fenster pro Move; Eingabepuffer.
+- Combo-Timer statt fester Pause; Punkte für Clean Links, Momentum, Landungen, On Beat, Breakdowns, Layering,
+  Abwechslung; Wiederholungen bringen weniger.
+- Größerer Pit, Crowd-Wand als federnde Grenze; neues HUD (Combo-Kette, Timer-Balken, Move-Callouts).
+- Entfernt für den Prototyp: Song-Auswahl, Free Pit, eigene Songs, Signature-Combos, Rhythmus-Bewertung, Box-Rig-Figuren.
+
 ### Geändert (Gameplay)
 
 - Groove-Modell (D-026): Moves in natürlicher Länge, Timing nur noch Bonus, kein Sturz bei Off-Beat; Crash, wenn ein

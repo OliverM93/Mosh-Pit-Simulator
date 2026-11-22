@@ -7,6 +7,23 @@ Format: **Datum · Entscheidung** – Begründung · Betroffene Systeme · Alter
 
 ---
 
+### D-028 · 2026-11-22 · MOSH PIT 2.0: THPS-Steuerung statt Rhythmusspiel, Bewegungs- und Aktionssystem neu
+- **Anlass:** Konzept „MOSH PIT 2.0“ des Owners: primär wie Tony Hawk's Pro Skater, ausdrücklich kein Rhythmusspiel.
+- **Entscheidung:** Neuer Prototyp auf eigenem Branch (`claude/mosh-pit-2-prototype`), alter Stand bleibt Referenz.
+  Bewegung, Moves, Combo und Spieler-Animation neu und technisch getrennt: `MovementController` (Momentum,
+  Kurvenradius, Skid, Anlauf), `MoveController` (Kategorie-Tasten + Situation, Ebenen full/upper, Absprung/Luft/
+  Landung, Cancel-Fenster pro Move, 0,3-s-Puffer), `ComboManager` (Combo-Timer, Wiederholung, Clean Link, Momentum,
+  Landung, Musik, Layering, Variation), `BeatManager` (Musik nur als Bonus), `AnimationController` (Unter-/Oberkörper-
+  Ebenen, Idle/Walk/Run-Mischung). Die Animation folgt der Logik (Clip-Zeit = Move-Fortschritt), nie umgekehrt.
+  Kamera folgt der Laufrichtung statt der Blickrichtung. Pit größer (Radius 4,8 m), Wand aus Leuten als federnde Grenze.
+- **Umfang:** eine Location, ein Spieler, sechs Moves, ein Testsong; Song-Auswahl, Modi, eigene Songs und die
+  Box-Rig-Darstellung sind entfernt (Code im Referenz-Branch).
+- **Begründung:** Die alte Mechanik (eine Move-Spur, Beat-Raster, feste Chain-Pause, globale Drosselung) verhinderte
+  Momentum, Überlagerung und Phasen – Umbau statt Erweiterung, wie vom Owner gefordert.
+- **Alternativen:** Bestehendes System erweitern (Altlasten aus dem Taktmodell), Engine-Wechsel (löst die
+  Mechanik-Fragen nicht).
+- **Ersetzt:** D-026 (Groove-Modell) für den Prototyp; Prinzip „Risiko ist räumlich“ bleibt.
+
 ### D-027 · 2026-11-21 · Geskinnte Figuren im Spiel: ein Charakter pro NPC statt Instancing
 - **Anlass:** Einbau der Blender-Figuren (D-025) in Spieler, Crowd und Band.
 - **Entscheidung:** Jeder NPC ist ein eigener `SkinnedMesh`-Klon (`SkeletonUtils.clone`) einer von 8 Crowd-Varianten;
