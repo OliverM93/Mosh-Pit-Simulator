@@ -24,6 +24,7 @@ python3.13 -m venv .cache/blender-venv && .cache/blender-venv/bin/pip install bp
 # Skeleton + all clips (shared by every character)
 .cache/blender-venv/bin/python tools/blender/build_characters.py --anims-only \
   --mh .cache/mh/makehuman/data --cmu .cache/cmu/data --keyclips tools/blender/keyframe_clips.json \
+  --bandai .cache/bandai/dataset/Bandai-Namco-Research-Motiondataset-1/data \
   --out public/models/anims.glb
 # One file per variant (player, c1 … c8, see variants.py)
 for v in player c1 c2 c3 c4 c5 c6 c7 c8; do
@@ -39,9 +40,18 @@ Optional: `--preview out.png` (Cycles still), `--anim-preview sheet.png` (frames
 `MOSH_CLIPS=idle,walk` (only these mocap clips), `MOSH_POSE=1` (print key joint positions per clip).
 Check in the browser: `npm run dev` → `http://localhost:5173/viewer.html?model=player&clip=spinkick`.
 
+Bandai Namco dataset (CC BY-NC 4.0, non-commercial):
+
+```bash
+git clone --depth 1 --filter=blob:none --no-checkout https://github.com/BandaiNamcoResearchInc/Bandai-Namco-Research-Motiondataset.git .cache/bandai
+(cd .cache/bandai && git checkout HEAD -- dataset/Bandai-Namco-Research-Motiondataset-1/data)
+```
+
 ## Files
 
 - `mh.py` – MakeHuman base mesh, targets, skeleton (reduced to 38 core bones), weights
 - `build_characters.py` – body shaping, clothes from the body (tee, baggy pants, sneakers, cap), rig, export
 - `bvhreader.py` – BVH parser + forward kinematics
-- `retarget.py` – CMU BVH → game skeleton (T-pose/A-pose alignment, facing, yaw-drift removal, in-place)
+- `retarget.py` – BVH → game skeleton (CMU: T-pose alignment; Bandai: calibration frame), facing, yaw drift,
+  floor clearance, loop search/blending, pose matching into the stance
+- `authoring.py` – IK-authored moves on the stance (2-step, windmill)

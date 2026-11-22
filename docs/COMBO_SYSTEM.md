@@ -12,7 +12,7 @@ Eine Taste pro Kategorie, Richtung und Tempo wählen den Move (erste passende De
 
 | Taste (Tastatur / Pad) | Bedingung | Move | Ebene | Dauer | Basis | Luftphase | Cancel ab |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| Footwork (Q / X) | – | 2-Step | full | 0,50 s | 50 | – | 45 % |
+| Footwork (Q / X) | – | 2-Step | full | 0,46 s | 50 | – | 70 % |
 | Arms (E / Y) | – | Windmill Arms | upper | 0,90 s | 100 | – | 50 % |
 | Kick (R / B) | Tempo ≥ 4 m/s | Tornado Kick | full | 1,05 s | 600 | 29–79 % | 86 % |
 | Kick (R / B) | sonst | Spinkick | full | 0,85 s | 300 | 30–70 % | 76 % |

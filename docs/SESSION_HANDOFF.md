@@ -9,6 +9,10 @@ alten Stand bleibt; dessen PR gegen `main` wartet weiter auf Freigabe). Kein PR 
 
 ## Zuletzt erledigt
 
+- **Owner-Feedback umgesetzt (D-029):** feste Kamera Richtung Band; Animationen neu: Kampfhaltung + Swagger/Run/Dash
+  (Bandai-Mocap, CC BY-NC), Pose-Matching aller Moves auf die Grundhaltung, 2-Step/Windmill per IK
+  (`tools/blender/authoring.py`), Locomotion-Mischung über vier Stufen. Viewer: `viewer.html?clip=two_step&cam=back`.
+
 - Konzept „MOSH PIT 2.0“ (Owner) analysiert, Plan in `docs/PROTOTYPE_2.md`, Entscheidung D-028.
 - Neu gebaut: `MovementController`, `MoveController`, `ComboManager`, `BeatManager`, `PitSession`,
   `AnimationController` (Ebenen), `PlayerView`, Chase-`CameraController`, HUD, Menüs (nur ein Testsong).
@@ -21,6 +25,8 @@ alten Stand bleibt; dessen PR gegen `main` wartet weiter auf Freigabe). Kein PR 
 - Nicht auf echter GPU/mit echtem Gamepad gespielt – Steuerungsgefühl ist ungetunt (Startwerte).
 - Grafik noch nicht auf THUG2-/Def-Jam-Niveau (Haare, Kleidungsdetails, Venue, Licht) – nächster großer Block.
 - Kein Aufsteh-Clip nach Bail; Cartwheel-Richtung des Mocap-Clips nicht gegen die Laufrichtung geprüft.
+- Bandai-Clips sind nur nicht-kommerziell lizenziert (CC BY-NC) – vor kommerzieller Nutzung ersetzen.
+- Grundhaltung hält die Fäuste recht hoch (Boxer-Deckung) – ggf. per IK absenken, wenn der Owner es anders will.
 - Testsong ist der Synth-Platzhalter „Basement Rules“.
 
 ## Nächster empfohlener Schritt

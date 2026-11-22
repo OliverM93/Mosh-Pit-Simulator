@@ -56,7 +56,8 @@ docs/           Dokumentation (deutsch)
    Die Animation folgt der Logik (Clip-Zeit = Move-Fortschritt). Musik gibt nur Boni. Risiko ist räumlich.
 5. **Tuning-Werte gebündelt:** `COMBO_TUNING`, `MOVE_TUNING`, `MOVEMENT_TUNING`, `BEAT_TUNING`, `SESSION_TUNING`,
    `CAMERA_TUNING`, `CROWD_TUNING`, `HYPE_TUNING`. Keine Magic Numbers verstreut einbauen.
-6. **Keine Fremd-Assets ohne geklärte Lizenz.** Texturen/Musik/SFX sind prozedural (siehe `docs/ASSET_PIPELINE.md`).
+6. **Keine Fremd-Assets ohne geklärte Lizenz.** Texturen/Musik/SFX sind prozedural; Figuren/Mocap: MakeHuman (CC0), CMU,
+   Bandai Namco (CC BY-NC – nur nicht-kommerziell, D-029). Register in `docs/ASSET_PIPELINE.md`.
 7. **Performance:** Figuren sind geskinnte Blender-Modelle (D-025/D-027) mit geteilter Geometrie/Clips; neue
    Crowd-Features dürfen keine *zusätzlichen* Draw-Calls pro NPC erzeugen. Dreiecksbudget im Blick behalten (≈ 1 Mio./Frame).
 8. Keine unnötige Komplexität: jedes Feature braucht einen erkennbaren Gameplay-Nutzen.
@@ -93,7 +94,7 @@ Nach jeder größeren Aufgabe:
 ## Aktueller Stand (2026-11-22)
 
 **MOSH PIT 2.0** (D-028, Branch `claude/mosh-pit-2-prototype`): THPS-artiger Prototyp – eine Location, Blender-Spieler
-mit Mocap, Chase-Kamera, Momentum-Movement, sechs Moves (hybride Eingabe, Ebenen, Phasen, Cancel-Fenster),
+mit Mocap (Kampfhaltung, Pose-Matching, IK-Moves, D-029), feste Kamera Richtung Band, Momentum-Movement, sechs Moves (hybride Eingabe, Ebenen, Phasen, Cancel-Fenster),
 Combo-Timer, ein Testsong. Plan/Analyse: `docs/PROTOTYPE_2.md`. Alter Stand als Referenz: `claude/laughing-bell-msxkz3`.
 
 ## Wichtige Entscheidungen (Kurzfassung, Details in `docs/DECISIONS.md`)

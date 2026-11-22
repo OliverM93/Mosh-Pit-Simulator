@@ -178,10 +178,13 @@ def windmill(t):
     env = env * env * (3 - 2 * env)
     out = {'pelvis': Vector((0, 0, -0.05 * env + 0.03 * env * math.cos(4 * math.pi * t)))}
     out['chest_rot'] = (0.2 * env, 0, 0.25 * env * math.sin(2 * math.pi * t))
-    r = 0.5
+    r = 0.52
     for s, phase, side in (('L', 0.0, 1), ('R', math.pi, -1)):
         a = 2 * math.pi * t * 2 + phase  # two turns per clip
-        circle = Vector((side * 0.16, -r * math.sin(a), r * math.cos(a) - 0.18))
+        # Circle around the shoulder (the stance fists sit in front of the chin), tilted outwards so the arm
+        # sweeps wide past the side on the way down – readable from behind.
+        out_x = side * (0.18 + 0.32 * (1 - math.cos(a)) / 2)
+        circle = Vector((out_x, 0.22 - r * math.sin(a), r * math.cos(a) - 0.2))
         out[f'hand_{s}'] = circle * env
     return out
 

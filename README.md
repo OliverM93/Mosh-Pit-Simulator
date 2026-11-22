@@ -24,7 +24,7 @@ npm run dev
 ```
 
 Dann <http://localhost:5173> öffnen, eine Taste drücken (aktiviert Audio), **Arcade** → Song wählen.
-Ins Bild klicken, um die Maus für die Kamera zu fangen.
+Die Kamera schaut immer Richtung Bühne – „hoch“ heißt „zur Band“.
 
 | Befehl              | Zweck                                             |
 | ------------------- | ------------------------------------------------- |
@@ -45,7 +45,6 @@ Ins Bild klicken, um die Maus für die Kamera zu fangen.
 | Arms (Windmill, auch im Laufen/2-Step) | E         | Y             |
 | Kick: Spinkick / mit Anlauf Tornado Kick | R       | B             |
 | Acro: Butterfly Kick / seitlich Cartwheel | Space  | A             |
-| Kamera umsehen            | Maus (Klick = fangen)  | rechter Stick |
 | Move-Liste ein/aus        | H                      | Back          |
 | Pause                     | Esc / P                | Start         |
 
@@ -108,3 +107,7 @@ Noch keine Lizenz festgelegt – bis dahin gilt: alle Rechte vorbehalten.
 Alle Musikstücke, Sounds und Texturen werden zur Laufzeit prozedural erzeugt; es sind keine Fremd-Assets
 enthalten. Songs, spielende Bands und Venues sind fiktiv. Auf Shirts und Flyern im Publikum stehen Namen echter
 Hardcore-Bands als Text (keine Original-Logos); für eine kommerzielle Veröffentlichung wäre deren Erlaubnis nötig. Einzige Laufzeit-Abhängigkeit: [three.js](https://threejs.org) (MIT).
+
+Figuren und Bewegungen: MakeHuman (CC0), CMU Graphics Lab Motion Capture Database (frei), Bandai Namco Research
+Motion Dataset (Bandai Namco Research Inc., [CC BY-NC 4.0](https://creativecommons.org/licenses/by-nc/4.0/) –
+nicht-kommerziell). Details: [docs/ASSET_PIPELINE.md](docs/ASSET_PIPELINE.md).

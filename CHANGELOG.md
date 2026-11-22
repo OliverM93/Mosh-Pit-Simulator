@@ -7,6 +7,12 @@ Versionierung nach [SemVer](https://semver.org/lang/de/) (vor 1.0 kann sich alle
 
 ### MOSH PIT 2.0 – Prototyp (Branch `claude/mosh-pit-2-prototype`, D-028)
 
+- Kamera immer Richtung Band, bewegt sich nur mit dem Spieler (D-029).
+- Neue Grundhaltung (Kampfhaltung aus Mocap), Fortbewegung Swagger → Run → Dash aus dem Bandai-Namco-Datensatz
+  (CC BY-NC 4.0), saubere Loops; alle Moves starten/enden in der Grundhaltung → Combos gehen nahtlos ineinander.
+- 2-Step und Windmill neu per IK gebaut (diagonaler Kick mit Armschwung, weite Armkreise).
+- Tänzer im Pit halten Abstand zum Spieler.
+
 - Neues Spielgefühl nach Tony Hawk's Pro Skater statt Rhythmusspiel: Momentum-Bewegung mit Kurvenradius, Skid und
   Anlauf; Third-Person-Kamera folgt der Laufrichtung.
 - Hybrides Move-System: eine Taste pro Kategorie (Footwork, Arms, Kick, Acro), Richtung und Tempo wählen den Move.

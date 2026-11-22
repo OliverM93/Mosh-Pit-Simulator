@@ -84,9 +84,13 @@ abbrechbaren Moves werden 0,3 s gepuffert und starten exakt beim Öffnen des Fen
 **Crowd:** Ring mit mehr Platz, Schubser weich begrenzt (max. Verschiebung pro Sekunde); Risiko nur, wenn große
 Moves ins Gedränge gehen (Crash) oder man auf Leuten landet (wackelige Landung).
 
-**Kamera:** leicht erhöht hinter dem Spieler, folgt der *Bewegungsrichtung* (nicht der Blickrichtung des
-Charakters → Spins drehen die Kamera nicht), sanftes Nachziehen, Maus/rechter Stick übersteuern kurz, Figur bleibt
-frei (Crowd auf der Sichtlinie wird ausgeblendet).
+**Kamera (geändert nach Owner-Feedback, D-029):** leicht erhöht hinter dem Spieler und **immer Richtung Band**
+ausgerichtet; sie verschiebt sich nur mit dem Spieler (keine Drehung). „Hoch“ auf dem Stick = zur Bühne. Sanftes
+Nachziehen, kleiner Vorausblick in Laufrichtung, Crowd auf der Sichtlinie wird ausgeblendet.
+
+**Animation (D-029):** Grundhaltung = Kampfhaltung (Mocap), Fortbewegung Swagger-Walk → Run → Dash (Mocap, saubere
+Loops). Jeder Move-Clip beginnt und endet exakt in der Grundhaltung (Pose-Matching), daher gehen Moves ohne Sprung
+ineinander über. 2-Step und Windmill sind per IK auf der Grundhaltung gebaut (`tools/blender/authoring.py`).
 
 **Animation:** Locomotion-Mischung Idle/Walk/Run nach Tempo (synchrone Phase), Move-Ebene mit kurzen
 Überblendungen, Oberkörper-Ebene für Arme. Mocap-Clips werden auf den spielrelevanten Ausschnitt gekürzt

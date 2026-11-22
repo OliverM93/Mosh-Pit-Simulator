@@ -7,6 +7,25 @@ Format: **Datum · Entscheidung** – Begründung · Betroffene Systeme · Alter
 
 ---
 
+### D-029 · 2026-11-22 · Feste Kamera Richtung Band; Animationen: Kampfhaltung, Pose-Matching, IK-Moves
+- **Anlass:** Owner-Feedback zum 2.0-Prototyp: Kamera nur auf zwei Achsen (immer Richtung Band); Grundhaltung
+  unnatürlich, Animationen nicht flüssig, wirken nicht wie Combos.
+- **Entscheidung Kamera:** feste Blickrichtung zur Bühne, Kamera verschiebt sich nur; Stick-Richtungen sind damit
+  Weltrichtungen. Maus-Umsehen entfällt (nur leichte Neigung).
+- **Entscheidung Animation:**
+  1. Neue Mocap-Quelle **Bandai Namco Research Motion Dataset** (CC BY-NC 4.0): Kampfhaltung als Grundhaltung,
+     „chimpira“-Walk/Run/Dash (Halbstarken-Gang) als Fortbewegung, High Kick. Retargeting über einen
+     Kalibrier-Frame (neutraler Stand), weil das Skelett keine T-Pose als Ruhepose hat.
+  2. Loops werden automatisch gesucht (`find_cycle`) und an den Enden verblendet.
+  3. **Pose-Matching:** alle Move-Clips beginnen/enden in der Grundhaltung → Combos gehen nahtlos ineinander über.
+  4. 2-Step und Windmill (kein freies Mocap vorhanden) werden per analytischer Zwei-Knochen-IK auf der
+     Grundhaltung gebaut (`tools/blender/authoring.py`), lesbar auch von hinten (diagonaler Kick, weite Armkreise).
+  5. Fortbewegung mischt Stance → Swagger → Jog → Dash mit gemessenen Schrittlängen (keine „wirbelnden“ Beine).
+- **Lizenz:** CC BY-NC passt zum privaten Projekt (Owner: nur private Nutzung). Vor kommerzieller Nutzung ersetzen
+  (Vermerk in ASSET_PIPELINE.md und README).
+- **Alternativen:** Mixamo (nicht erreichbar, Account), weitere CMU-Takes (keine Hardcore-Moves, neutrale
+  Haltung), komplett handgekeyte Clips (aufwendig, weniger natürlich als Mocap für Fortbewegung).
+
 ### D-028 · 2026-11-22 · MOSH PIT 2.0: THPS-Steuerung statt Rhythmusspiel, Bewegungs- und Aktionssystem neu
 - **Anlass:** Konzept „MOSH PIT 2.0“ des Owners: primär wie Tony Hawk's Pro Skater, ausdrücklich kein Rhythmusspiel.
 - **Entscheidung:** Neuer Prototyp auf eigenem Branch (`claude/mosh-pit-2-prototype`), alter Stand bleibt Referenz.
