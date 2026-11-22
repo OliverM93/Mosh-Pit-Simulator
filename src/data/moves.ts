@@ -4,7 +4,8 @@ const ALL: MoveCategory[] = ['footwork', 'arms', 'kick', 'acro'];
 
 /**
  * Prototype move list (six moves, docs/PROTOTYPE_2.md). Order matters inside a category: the first
- * definition whose `when` matches wins. Clip ranges/air phases are measured from the mocap root height.
+ * definition whose `when` matches wins. Air phases are measured from the mocap root height; every clip
+ * starts and ends in the fighting stance (tools/blender, D-029), so moves chain without pops.
  */
 export const MOVES: MoveDefinition[] = [
   {
@@ -12,11 +13,11 @@ export const MOVES: MoveDefinition[] = [
     name: '2-Step',
     category: 'footwork',
     layer: 'full',
-    duration: 0.5,
+    duration: 0.46,
     clip: 'two_step',
     clipRange: [0, 1],
     alternate: true,
-    cancelFrom: 0.45,
+    cancelFrom: 0.7,
     cancelInto: ALL,
     movement: { steer: 0.85, speed: 0.6, carry: 0.6 },
     points: 50,
@@ -31,7 +32,7 @@ export const MOVES: MoveDefinition[] = [
     category: 'arms',
     layer: 'upper',
     duration: 0.9,
-    clip: 'forward_arms',
+    clip: 'windmill',
     clipRange: [0, 1],
     cancelFrom: 0.5,
     cancelInto: ALL,
@@ -50,7 +51,7 @@ export const MOVES: MoveDefinition[] = [
     when: { minSpeed: 4 },
     duration: 1.05,
     clip: 'tornado_kick',
-    clipRange: [0.3, 1],
+    clipRange: [0, 1],
     alternate: true,
     air: { takeoff: 0.29, land: 0.79 },
     cancelFrom: 0.86,
@@ -69,7 +70,7 @@ export const MOVES: MoveDefinition[] = [
     layer: 'full',
     duration: 0.85,
     clip: 'spinkick',
-    clipRange: [0.15, 1],
+    clipRange: [0, 1],
     alternate: true,
     air: { takeoff: 0.3, land: 0.7 },
     cancelFrom: 0.76,
@@ -89,7 +90,7 @@ export const MOVES: MoveDefinition[] = [
     when: { side: true },
     duration: 1.15,
     clip: 'cartwheel',
-    clipRange: [0.2, 0.95],
+    clipRange: [0, 1],
     air: { takeoff: 0.27, land: 0.73 },
     cancelFrom: 0.8,
     cancelInto: ALL,
@@ -107,7 +108,7 @@ export const MOVES: MoveDefinition[] = [
     layer: 'full',
     duration: 1.15,
     clip: 'butterfly_kick',
-    clipRange: [0.3, 1],
+    clipRange: [0, 1],
     alternate: true,
     air: { takeoff: 0.29, land: 0.71 },
     cancelFrom: 0.82,

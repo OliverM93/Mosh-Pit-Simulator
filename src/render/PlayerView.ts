@@ -5,10 +5,18 @@ import type { PitSession } from '../gameplay/PitSession';
 import type { AnimationController, ClipPart } from './AnimationController';
 import { basic } from './ps1';
 
-/** Locomotion blend: speeds (m/s) and stride lengths (m per clip cycle) of the mocap walk/run. */
-const LOCO = { walkFrom: 0.15, walkFull: 1.4, runFrom: 3.3, runFull: 5.6, walkStride: 1.8, runStride: 3.1 };
-/** Fade times (s). */
-const FADE = { intoMove: 0.08, outOfMove: 0.2, upper: 0.12, bail: 0.06, getUp: 0.5 };
+/**
+ * Locomotion blend (D-029): fighting stance → swagger walk → run → dash, each at the speed (m/s) it was
+ * captured at, with its stride (m per clip cycle, measured from the mocap). Neighbours cross-fade.
+ */
+const LOCO: { clip: string; speed: number; stride: number }[] = [
+  { clip: 'stance', speed: 0, stride: 1.19 },
+  { clip: 'swagger', speed: 1.2, stride: 1.19 },
+  { clip: 'jog', speed: 3.0, stride: 2.2 },
+  { clip: 'dash', speed: 5.4, stride: 2.31 },
+];
+/** Fade times (s). Moves start/end in the stance, so short fades stay seamless. */
+const FADE = { intoMove: 0.12, outOfMove: 0.2, upper: 0.15, bail: 0.06, getUp: 0.5 };
 
 /**
  * The player's character: drives the layered AnimationController from
@@ -45,16 +53,20 @@ export class PlayerView {
     const a = this.anim;
     this.clock += dt;
 
-    // Locomotion source: idle / walk / run weighted by speed, one shared cycle phase.
+    // Locomotion source: speed-weighted neighbours of LOCO, one shared cycle phase (feet stay in sync).
     const sp = mv.speed;
-    const walk = smoothstep(clamp((sp - LOCO.walkFrom) / (LOCO.walkFull - LOCO.walkFrom), 0, 1));
-    const run = smoothstep(clamp((sp - LOCO.runFrom) / (LOCO.runFull - LOCO.runFrom), 0, 1));
-    this.cycle += (dt * sp) / (LOCO.walkStride + (LOCO.runStride - LOCO.walkStride) * run);
+    let i = 0;
+    while (i < LOCO.length - 2 && sp > LOCO[i + 1]!.speed) i++;
+    const lo = LOCO[i]!;
+    const hi = LOCO[i + 1]!;
+    const k = smoothstep(clamp((sp - lo.speed) / (hi.speed - lo.speed), 0, 1));
+    const stride = lo.stride + (hi.stride - lo.stride) * k;
+    this.cycle += (dt * sp) / stride;
     const phase = this.cycle - Math.floor(this.cycle);
+    const cycleTime = (clip: string) => (clip === 'stance' ? (this.clock / a.duration('stance')) % 1 : phase) * a.duration(clip);
     const loco: ClipPart[] = [
-      { clip: 'idle', time: (this.clock / a.duration('idle')) % 1 * a.duration('idle'), weight: 1 - walk },
-      { clip: 'walk', time: phase * a.duration('walk'), weight: walk * (1 - run) },
-      { clip: 'run', time: phase * a.duration('run'), weight: walk * run },
+      { clip: lo.clip, time: cycleTime(lo.clip), weight: 1 - k },
+      { clip: hi.clip, time: cycleTime(hi.clip), weight: k },
     ];
 
     if (s.moves.isBailing(t)) {

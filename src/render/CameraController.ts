@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { clamp, damp, dampAngle, wrapAngle } from '../core/math';
+import { clamp, damp } from '../core/math';
 import type { VenueDefinition } from '../data/venueTypes';
 
 export const CAMERA_TUNING = {
@@ -9,30 +9,21 @@ export const CAMERA_TUNING = {
   focusHeight: 1.15,
   /** Look ahead along the velocity (s). */
   lookAhead: 0.18,
-  /** Yaw follow rate: base + per m/s of speed. */
-  followBase: 0.6,
-  followPerSpeed: 0.45,
-  /** Running towards the camera: swing round slowly instead of flipping. */
-  reverseAngle: 2.3,
-  reverseRate: 0.5,
-  /** Follow rate factor during moves (spins/flips must not whip the camera). */
-  duringMove: 0.25,
-  /** Manual look pauses auto-follow for this long. */
-  manualHoldSec: 1.4,
+  /** The camera always looks this way: towards the stage (-z). */
+  fixedYaw: Math.PI,
   fov: 60,
 };
 
 /**
- * Third-person chase camera: slightly raised behind the player, follows the
- * direction of *travel* (not the body facing – spinkicks don't rotate it),
- * lags softly, stays inside the room and under the low ceiling.
- * Mouse / right stick can look around; auto-follow resumes after a moment.
+ * Third-person camera, slightly raised behind the player and always facing the
+ * band (owner feedback, D-029): it only moves along the floor plane with the
+ * player, so "up" on the stick is always "towards the stage". Lags softly,
+ * looks a little ahead of the movement, stays inside the room.
  */
 export class CameraController {
   readonly camera: THREE.PerspectiveCamera;
   yaw = Math.PI;
   private pitch = 0.22;
-  private manual = 0;
   private shake = 0;
   private fovKick = 0;
   private readonly target = new THREE.Vector3();
@@ -54,12 +45,10 @@ export class CameraController {
     };
   }
 
-  /** Mouse/stick look in radians. */
+  /** Mouse/stick look: only tilts the view slightly – the direction stays fixed towards the band. */
   look(dx: number, dy: number): void {
-    if (dx === 0 && dy === 0) return;
-    this.manual = CAMERA_TUNING.manualHoldSec;
-    this.yaw -= dx;
-    this.pitch = clamp(this.pitch + dy, -0.05, 0.6);
+    void dx;
+    this.pitch = clamp(this.pitch + dy, 0, 0.5);
   }
 
   addShake(amount: number): void {
@@ -81,16 +70,9 @@ export class CameraController {
    */
   update(dt: number, px: number, py: number, pz: number, heading: number, speed: number, inMove: boolean, snap = false): void {
     const T = CAMERA_TUNING;
-    this.manual = Math.max(0, this.manual - dt);
-    if (this.manual <= 0 && speed > 0.8) {
-      const diff = wrapAngle(heading - this.yaw);
-      let rate = T.followBase + speed * T.followPerSpeed;
-      if (Math.abs(diff) > T.reverseAngle) rate = T.reverseRate;
-      if (inMove) rate *= T.duringMove;
-      this.yaw = dampAngle(this.yaw, heading, rate, dt);
-      this.pitch = damp(this.pitch, 0.22, 1.5, dt);
-    }
-
+    // Fixed view towards the band (D-029): the camera only translates with the player.
+    this.yaw = T.fixedYaw;
+    void inMove;
     const ax = Math.sin(heading) * speed * T.lookAhead;
     const az = Math.cos(heading) * speed * T.lookAhead;
     const ty = T.focusHeight + py * 0.4;

@@ -105,10 +105,23 @@ class BVH:
                 wr = rot
             else:
                 ph, pr = res[j.parent.name]
-                head = ph + pr @ j.offset
+                # Some exporters (Bandai Namco) give every joint position channels: they replace the offset.
+                head = ph + pr @ (loc if loc is not None else j.offset)
                 wr = pr @ rot
             res[j.name] = (head, wr)
         return {n: (AXIS @ h, AXIS @ r @ AXIS_INV) for n, (h, r) in res.items()}
+
+    def dir_at(self, world, name):
+        """Direction of a joint's bone (towards its first child with length) in a posed frame (Blender space)."""
+        j = self.joints[name]
+        c = j
+        while c.children:
+            c = c.children[0]
+            d = world[c.name][0] - world[name][0]
+            if d.length > 1e-6:
+                return d.normalized()
+        # Terminal joint (hand, toes): continue the parent's direction.
+        return self.dir_at(world, j.parent.name) if j.parent else Vector((0, 0, 1))
 
     def rest_dir(self, name):
         """Rest direction of a joint's bone (towards its first child / end site), Blender space."""

@@ -8,7 +8,7 @@ export const VENUES: VenueDefinition[] = [
     room: { width: 17, depth: 16, height: 3.2 },
     stage: { width: 6.5, depth: 2.6, height: 0.35 },
     pit: { x: 0, z: 0.9, radius: 4.8 },
-    crowd: { watchers: 64, dancers: 3, ninjas: 2, surfers: 1, seed: 1337 },
+    crowd: { watchers: 64, dancers: 2, ninjas: 1, surfers: 1, seed: 1337 },
     look: {
       fog: 0x120b14,
       fogNear: 4,

@@ -21,6 +21,7 @@ from mathutils import Vector, kdtree
 sys.path.insert(0, os.path.dirname(__file__))
 from mh import BaseMesh, Skeleton, to_blender  # noqa: E402
 from retarget import retarget, retarget_keyframes  # noqa: E402
+from authoring import AUTHORED, author  # noqa: E402
 import textures as tx  # noqa: E402
 from variants import VARIANTS  # noqa: E402
 
@@ -38,14 +39,22 @@ BODY = {
 
 
 # Motion capture clips: (clip name, BVH file, first frame, last frame, mirrored copy "<name>_m")
+STANCE_MATCH = {'match': ('stance', 0.18, 0.3)}
+# Mocap clips: (name, file, start, end, mirrored, options). 'bn:' = Bandai Namco dataset-1 (CC BY-NC 4.0), else CMU.
+# The stance must come first: moves blend their first/last frames into it so they chain without pops.
 CLIPS = [
+    ('stance', 'bn:dataset-1_kick_normal_001.bvh', 0, 44, False, {'cycle': (14, 40), 'loop': 0.3, 'register': 'stance'}),
+    ('swagger', 'bn:dataset-1_walk_chimpira_001.bvh', 20, 165, False, {'cycle': (25, 48), 'loop': 0.2}),
+    ('jog', 'bn:dataset-1_run_chimpira_001.bvh', 5, 69, False, {'cycle': (14, 30), 'loop': 0.2}),
+    ('dash', 'bn:dataset-1_dash_chimpira_001.bvh', 5, 68, False, {'cycle': (14, 28), 'loop': 0.2}),
+    ('high_kick', 'bn:dataset-1_kick_normal_001.bvh', 44, 92, True, STANCE_MATCH),
     ('idle', '082/82_08.bvh', 100, 400, False),
     ('walk', '002/02_01.bvh', 100, 232, False),
     ('run', '009/09_01.bvh', 40, 112, False),
-    ('spinkick', '088/88_06.bvh', 22, 125, True),
-    ('cartwheel', '090/90_02.bvh', 325, 520, True),
-    ('tornado_kick', '087/87_01.bvh', 140, 300, True),
-    ('butterfly_kick', '090/90_05.bvh', 165, 345, True),
+    ('spinkick', '088/88_06.bvh', 37, 125, True, STANCE_MATCH),
+    ('cartwheel', '090/90_02.bvh', 364, 471, True, STANCE_MATCH),
+    ('tornado_kick', '087/87_01.bvh', 188, 300, True, STANCE_MATCH),
+    ('butterfly_kick', '090/90_05.bvh', 219, 345, True, STANCE_MATCH),
     ('floorwork', '090/90_28.bvh', 340, 500, True),
     ('bail', '090/90_16.bvh', 330, 500, False, {'max_rise': 0.05}),
     ('cheer', '079/79_69.bvh', 110, 300, False),
@@ -54,12 +63,27 @@ CLIPS = [
 
 # Hand-keyed clips (src/animation/clips.ts → keyframe_clips.json): (clip id, mirrored copy)
 KEY_CLIPS = [
-    ('two_step', True), ('crowd_push', False), ('forward_arms', False), ('side_arms', False),
+    ('crowd_push', False), ('forward_arms', False), ('side_arms', False),
     ('pick_up_change', False), ('bob', False), ('headbang', False), ('fist_pump', False), ('arms_crossed', False),
     ('jump_cheer', False), ('ooh', False), ('shove', False), ('stumble', False), ('surf', False),
     ('band_vocals', False), ('band_vocals_heavy', False), ('band_guitar', False), ('band_guitar_heavy', False),
     ('band_drums', False),
 ]
+
+
+BANDAI_CAL = ('dataset-1_bow_normal_001.bvh', 0)  # neutral standing frame used to calibrate the Bandai skeleton
+
+
+def clip_source(args, file):
+    """BVH path and source options for a CLIPS entry ('bn:' = Bandai Namco take, else CMU)."""
+    if file.startswith('bn:'):
+        return os.path.join(args.bandai, file[3:]), {'source': 'bandai', 'cal': (os.path.join(args.bandai, BANDAI_CAL[0]), BANDAI_CAL[1])}
+    return os.path.join(args.cmu, file), {}
+
+
+def run_clip(rig, args, file, start, end, name, mirror, opt):
+    path, src = clip_source(args, file)
+    return retarget(rig, path, start, end, name, mirror=mirror, **src, **(opt[0] if opt else {}))
 
 
 def clear_scene():
@@ -242,6 +266,7 @@ def main():
     ap.add_argument('--out', required=True)
     ap.add_argument('--preview', default='')
     ap.add_argument('--cmu', default='', help='cmu-mocap data dir (BVH)')
+    ap.add_argument('--bandai', default='', help='Bandai-Namco-Research-Motiondataset-1/data dir (BVH, CC BY-NC 4.0)')
     ap.add_argument('--keyclips', default='', help='keyframe_clips.json exported from src/animation/clips.ts')
     ap.add_argument('--anim-preview', default='')
     ap.add_argument('--tex', type=int, default=1024, help='body texture size (0 = untextured)')
@@ -405,9 +430,16 @@ def main():
             if only and name not in only:
                 continue
             for m in ([False, True] if mirrored else [False]):
-                act, n, dt = retarget(rig, os.path.join(args.cmu, file), start, end, name + ('_m' if m else ''), mirror=m, **(opt[0] if opt else {}))
+                act, n, dt = run_clip(rig, args, file, start, end, name + ('_m' if m else ''), m, opt)
                 clips.append((act, n))
             print(f'clip {name}: {n} keys, {n * dt:.2f}s')
+    if args.cmu:
+        for name, dur, spec, mirrored in AUTHORED:
+            if only and name not in only:
+                continue
+            for m in ([False, True] if mirrored else [False]):
+                n = author(rig, name + ('_m' if m else ''), dur, spec, mirror=m)
+                clips.append((bpy.data.actions[name + ('_m' if m else '')], n))
     if args.keyclips:
         import json
         with open(args.keyclips) as f:
@@ -619,7 +651,10 @@ def export_anims(args, rig):
     if args.cmu:
         for name, file, start, end, mirrored, *opt in CLIPS:
             for m in ([False, True] if mirrored else [False]):
-                retarget(rig, os.path.join(args.cmu, file), start, end, name + ('_m' if m else ''), mirror=m, **(opt[0] if opt else {}))
+                run_clip(rig, args, file, start, end, name + ('_m' if m else ''), m, opt)
+        for name, dur, spec, mirrored in AUTHORED:
+            for m in ([False, True] if mirrored else [False]):
+                author(rig, name + ('_m' if m else ''), dur, spec, mirror=m)
     if args.keyclips:
         with open(args.keyclips) as f:
             data = json.load(f)

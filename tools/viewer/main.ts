@@ -25,6 +25,9 @@ const CAMS: Record<string, [number, number, number, number, number, number]> = {
   full: [1.6, 1.5, 3.6, 0, 0.95, 0],
   face: [0.25, 1.68, 0.75, 0, 1.6, 0],
   side: [3.4, 1.3, 0.4, 0, 0.95, 0],
+  wide: [5.2, 1.2, 0.6, 0, 0.85, 0],
+  front: [0.6, 1.2, 5.2, 0, 0.85, 0],
+  back: [0, 1.9, -4.6, 0, 0.9, 0],
 };
 const cam = CAMS[params.get('cam') ?? 'full'] ?? CAMS.full!;
 camera.position.set(cam[0], cam[1], cam[2]);
@@ -60,8 +63,9 @@ lib.load('./models/').then(() => {
   char = lib.create(model);
   char.setShadows(true, true);
   scene.add(char.object);
-  const names = ['idle', 'walk', 'run', 'two_step', 'forward_arms', 'side_arms', 'pick_up_change', 'crowd_push', 'spinkick', 'floorwork',
-    'cartwheel', 'hop', 'tornado_kick', 'butterfly_kick', 'bail', 'cheer', 'headbang', 'bob', 'fist_pump', 'arms_crossed', 'band_drums'];
+  const names = ['stance', 'swagger', 'dash', 'two_step', 'windmill', 'spinkick', 'tornado_kick', 'cartwheel', 'butterfly_kick',
+    'high_kick', 'bail', 'idle', 'walk', 'run', 'cheer', 'headbang', 'bob', 'fist_pump', 'arms_crossed'];
+  if (params.get('ui') === '0') ui.style.display = 'none';
   for (const name of names) {
     const b = document.createElement('button');
     b.textContent = name;

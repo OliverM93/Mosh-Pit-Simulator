@@ -78,9 +78,9 @@ describe('MoveController', () => {
     const mc = new MoveController(MOVES);
     mc.press('footwork', 0, STILL);
     const first = mc.full!.mirror;
-    mc.press('footwork', 0.3, STILL);
+    mc.press('footwork', 0.4, STILL);
     expect(mc.full!.mirror).toBe(!first);
-    mc.bail(0.4);
+    mc.bail(0.45);
     mc.press('kick', 0.5, STILL);
     expect(mc.full).toBeNull();
     expect(mc.isBailing(0.5)).toBe(true);

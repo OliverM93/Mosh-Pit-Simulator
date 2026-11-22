@@ -67,6 +67,8 @@ export const CROWD_TUNING = {
   homeSpring: 9,
   homeDamping: 6,
   dancerSpeed: 1.3,
+  /** Dancers keep at least this far from the player. */
+  dancerKeepAway: 2.2,
   /** Watchers push the player back into the pit with this strength. */
   wallPush: 0.35,
   surferSpeed: 0.85,
@@ -366,9 +368,12 @@ export class CrowdSim {
     const px = a.x - ctx.playerX;
     const pz = a.z - ctx.playerZ;
     const pd = Math.hypot(px, pz);
-    if (pd < 1.4 && pd > 0.01) {
-      dx += (px / pd) * 2;
-      dz += (pz / pd) * 2;
+    const keep = CROWD_TUNING.dancerKeepAway;
+    const dodging = pd < keep && pd > 0.01;
+    if (dodging) {
+      // Make room for the player (they need space for big moves).
+      dx += (px / pd) * 4;
+      dz += (pz / pd) * 4;
     }
     // Stay inside the pit.
     const cx = a.x - pit.x;
@@ -379,7 +384,7 @@ export class CrowdSim {
       dz -= (cz / cd) * 2;
     }
     const len = Math.hypot(dx, dz) || 1;
-    const speed = CROWD_TUNING.dancerSpeed * (0.6 + ctx.energy * 0.6);
+    const speed = CROWD_TUNING.dancerSpeed * (0.6 + ctx.energy * 0.6) * (dodging ? 2.2 : 1);
     a.vx = damp(a.vx, (dx / len) * speed, 4, dt);
     a.vz = damp(a.vz, (dz / len) * speed, 4, dt);
     a.x += a.vx * dt;
