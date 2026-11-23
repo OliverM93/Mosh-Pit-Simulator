@@ -5,7 +5,8 @@ const ALL: MoveCategory[] = ['footwork', 'arms', 'kick', 'acro'];
 /**
  * Prototype move list (docs/PROTOTYPE_2.md). Order matters inside a category: the first
  * definition whose `when` matches wins. Air phases are measured from the mocap root height; every clip
- * starts and ends in the fighting stance (tools/blender, D-029), so moves chain without pops.
+ * starts and ends in the fighting stance (tools/blender, D-029), so moves chain without pops – except the
+ * 2-step: it is video mocap (D-031) split into two halves that continue into each other (alternate = next half).
  */
 export const MOVES: MoveDefinition[] = [
   {
@@ -13,12 +14,12 @@ export const MOVES: MoveDefinition[] = [
     name: '2-Step',
     category: 'footwork',
     layer: 'full',
-    duration: 0.48,
+    duration: 0.65,
     clip: 'two_step',
     clipRange: [0, 1],
     alternate: true,
     repeatOnHold: true,
-    repeatFrom: 0.86,
+    repeatFrom: 0.97,
     cancelFrom: 0.7,
     cancelInto: ALL,
     movement: { steer: 0.85, speed: 0.6, carry: 0.6 },

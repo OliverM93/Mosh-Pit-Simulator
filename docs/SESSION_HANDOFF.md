@@ -9,6 +9,9 @@ alten Stand bleibt; dessen PR gegen `main` wartet weiter auf Freigabe). Kein PR 
 
 ## Zuletzt erledigt
 
+- **D-031:** 2-Step aus dem Referenzvideo des Owners per MediaPipe-Video-Mocap (`tools/blender/videomocap.py`,
+  Daten `tools/blender/video/two_step_pose.json`). Weitere Moves lassen sich genauso aus Videos gewinnen.
+
 - **D-030:** Arm Swing + Windmill (vorwärts) neu, 2-Step mit kreuzendem Bein, Halten = Rhythmus, frühere
   Cancel-Fenster, alle Clips auf den Boden gesetzt (NPCs versinken nicht mehr). 7 Moves, 43 Tests.
 

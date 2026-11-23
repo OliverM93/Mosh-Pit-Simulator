@@ -7,6 +7,21 @@ Format: **Datum · Entscheidung** – Begründung · Betroffene Systeme · Alter
 
 ---
 
+### D-031 · 2026-11-23 · 2-Step aus Video-Mocap (MediaPipe) statt Handanimation
+- **Anlass:** Owner: 2-Step wirkt unnatürlich; Referenzvideo (2,8 s, 30 fps) + Gemini-Bewegungsanalyse geliefert.
+- **Entscheidung:** Pose-Schätzung mit MediaPipe Pose 0.10.14 (offline, Modell im Paket) liefert 3D-Gelenkpositionen
+  pro Frame (`tools/blender/video/pose_video.py` → `two_step_pose.json`). `tools/blender/videomocap.py` richtet
+  Gliedmaßen an den Segmenten aus, Becken/Brust/Kopf aus Hüft-/Schulter-/Ohrpaaren, Höhe (Hop) aus der Hüftbewegung
+  im Bild. Ein Zyklus (Frames 4–49, 1,5 s = links + rechts) wird ausgeschnitten, geschlossen, auf den Boden
+  gesetzt und in zwei Hälften geteilt (`two_step`, `two_step_m`), die direkt ineinander übergehen. Im Spiel 0,65 s
+  pro Schritt; Halten spielt die Hälften nahtlos hintereinander.
+- **Daten:** Das Video wird nicht ins Repo übernommen (nur die abgeleiteten Gelenkzahlen). MediaPipe ist nur ein
+  Offline-Werkzeug, keine Laufzeit-Abhängigkeit.
+- **Grenzen:** Monokulare Tiefe ist ungenau (Beine etwas weniger gespreizt als im Video), einzelne Armspitzen
+  verschieben sich um 1–2 Frames.
+- **Alternativen:** Weitere IK-Handanimation (vom Owner als unnatürlich bewertet), Mocap-Datensätze (kein
+  Hardcore-2-Step verfügbar), Mixamo (nicht erreichbar).
+
 ### D-030 · 2026-11-22 · Kräftige Armbewegungen, Kreuz-2-Step, Halten = Rhythmus, Clips am Boden
 - **Anlass:** Owner-Feedback: Arme fehlen/zu schwach, 2-Step macht fast nichts, NPCs versinken im Boden, keine
   flüssigen Combos.

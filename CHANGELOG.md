@@ -7,6 +7,9 @@ Versionierung nach [SemVer](https://semver.org/lang/de/) (vor 1.0 kann sich alle
 
 ### MOSH PIT 2.0 – Prototyp (Branch `claude/mosh-pit-2-prototype`, D-028)
 
+- 2-Step neu aus einem Referenzvideo per Video-Mocap (MediaPipe, D-031): echter Bewegungsablauf mit Hop, flachen
+  Kicks, kreuzendem Bein, Oberkörperrotation und weiten Armschwüngen; gehalten als nahtloser Loop.
+
 - Neue Armbewegungen (D-030): Arm Swing (kraftvoller Rückwärtskreis, abwechselnd, Oberkörper dreht mit) und
   Windmill nach vorn (Arms + vorwärts); 2-Step neu mit Bein, das über das andere schwingt.
 - Halten von Footwork/Arms = durchgehender Rhythmus; Kicks/Acro sind direkt nach der Landung abbrechbar.

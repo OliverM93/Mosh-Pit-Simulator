@@ -22,6 +22,10 @@ sys.path.insert(0, os.path.dirname(__file__))
 from mh import BaseMesh, Skeleton, to_blender  # noqa: E402
 from retarget import retarget, retarget_keyframes  # noqa: E402
 from authoring import AUTHORED, author  # noqa: E402
+import videomocap  # noqa: E402
+from retarget import POSES  # noqa: E402
+
+VIDEO_2STEP = os.path.join(os.path.dirname(__file__), 'video', 'two_step_pose.json')
 import textures as tx  # noqa: E402
 from variants import VARIANTS  # noqa: E402
 
@@ -440,6 +444,9 @@ def main():
             for m in ([False, True] if mirrored else [False]):
                 n = author(rig, name + ('_m' if m else ''), dur, spec, mirror=m)
                 clips.append((bpy.data.actions[name + ('_m' if m else '')], n))
+        if not only or 'two_step' in only:
+            videomocap.build(rig, VIDEO_2STEP, POSES['stance'], ('two_step', 'two_step_m'))
+            clips += [(bpy.data.actions['two_step'], 20), (bpy.data.actions['two_step_m'], 20)]
     if args.keyclips:
         import json
         with open(args.keyclips) as f:
@@ -655,6 +662,7 @@ def export_anims(args, rig):
         for name, dur, spec, mirrored in AUTHORED:
             for m in ([False, True] if mirrored else [False]):
                 author(rig, name + ('_m' if m else ''), dur, spec, mirror=m)
+        videomocap.build(rig, VIDEO_2STEP, POSES['stance'], ('two_step', 'two_step_m'))
     if args.keyclips:
         with open(args.keyclips) as f:
             data = json.load(f)

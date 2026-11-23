@@ -219,7 +219,6 @@ def windmill(t):
 
 AUTHORED = [
     # (clip name, duration s, spec, mirrored copy)
-    ('two_step', 0.5, two_step, True),
     ('arm_swing', 0.6, arm_swing, True),
     ('windmill', 0.9, windmill, False),
 ]

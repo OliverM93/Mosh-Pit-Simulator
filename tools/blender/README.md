@@ -47,6 +47,16 @@ git clone --depth 1 --filter=blob:none --no-checkout https://github.com/BandaiNa
 (cd .cache/bandai && git checkout HEAD -- dataset/Bandai-Namco-Research-Motiondataset-1/data)
 ```
 
+Video mocap (2-step, D-031) – only needed to re-extract landmarks from a new reference video:
+
+```bash
+python3.12 -m venv .cache/mp-venv && .cache/mp-venv/bin/pip install "mediapipe==0.10.14" opencv-python-headless
+.cache/mp-venv/bin/python tools/blender/video/pose_video.py clip.mp4 pose.json overlay_dir/
+```
+
+Then reduce `pose.json` to `tools/blender/video/<move>_pose.json` (world + image landmarks) and wire it in
+`build_characters.py` (`VIDEO_2STEP`).
+
 ## Files
 
 - `mh.py` – MakeHuman base mesh, targets, skeleton (reduced to 38 core bones), weights
@@ -54,4 +64,5 @@ git clone --depth 1 --filter=blob:none --no-checkout https://github.com/BandaiNa
 - `bvhreader.py` – BVH parser + forward kinematics
 - `retarget.py` – BVH → game skeleton (CMU: T-pose alignment; Bandai: calibration frame), facing, yaw drift,
   floor clearance, loop search/blending, pose matching into the stance
-- `authoring.py` – IK-authored moves on the stance (2-step, windmill)
+- `authoring.py` – IK-authored moves on the stance (arm swing, windmill)
+- `videomocap.py` – MediaPipe landmarks → skeleton (2-step), cycle search, split into alternating halves
