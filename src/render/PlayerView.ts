@@ -107,7 +107,7 @@ export class PlayerView {
 
   /** Clip time from move progress (gameplay owns the timing; the clip range cuts slow wind-ups). */
   private movePart(m: ActiveMove, s: PitSession): ClipPart {
-    const clip = this.anim.resolve(m.def.clip, m.mirror);
+    const clip = this.anim.resolve(m.def.clipVariants?.[m.variant] ?? m.def.clip, m.mirror);
     const [r0, r1] = m.def.clipRange;
     const p = s.moves.progress(m, s.songTime);
     return { clip, time: (r0 + (r1 - r0) * p) * this.anim.duration(clip), weight: 1 };

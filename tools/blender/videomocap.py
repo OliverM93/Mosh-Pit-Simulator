@@ -9,9 +9,11 @@ A repeating cycle is cut out, smoothed into a loop, settled onto the floor and s
 """
 import json
 import math
+import os
 
 from mathutils import Matrix, Quaternion, Vector
 
+from authoring import _solve_chain
 from retarget import Skeleton, settle_keys, write_action
 
 # MediaPipe landmark indices (person's left/right).
@@ -87,7 +89,7 @@ def find_cycle(world, pmin, pmax):
     return best[1], best[2]
 
 
-def pose_frame(sk, stance_local, f, root):
+def pose_frame(sk, stance_local, f, root, spread_legs=1.0, spread_arms=1.0):
     """One frame of landmarks → local quaternions (starting from the stance for bones we do not drive)."""
     # Every frame is solved from the rest pose (stance_local only defines which bones exist).
     local = {b: Quaternion() for b in stance_local}
@@ -109,21 +111,50 @@ def pose_frame(sk, stance_local, f, root):
     for b in ('neck01', 'head'):
         world, _ = sk.fk(local, root)
         sk.set_world(local, world, b, Quaternion().slerp(rel_h, 0.5).to_matrix() @ world[b])
-    # Limbs: aim each bone's segment at the landmark segment (minimal rotation keeps the parent's twist).
+    # Limbs as two-bone chains reaching for the video's end point (ankle / wrist), measured from the hip /
+    # shoulder in the pelvis / chest frame. Its sideways part is exaggerated: monocular depth flattens it, and
+    # wide legs and arms read better in the game. Knees and elbows bend towards the video's knee / elbow.
+    world, head_pos = sk.fk(local, root)
+    for chain, (j0, j1, j2), frame, k in (
+        (('upperleg01.L', 'lowerleg01.L', 'foot.L'), (L_HIP, L_KNEE, L_ANK), pelvis, spread_legs),
+        (('upperleg01.R', 'lowerleg01.R', 'foot.R'), (R_HIP, R_KNEE, R_ANK), pelvis, spread_legs),
+        (('upperarm01.L', 'lowerarm01.L', 'wrist.L'), (L_SH, L_EL, L_WR), chest, spread_arms),
+        (('upperarm01.R', 'lowerarm01.R', 'wrist.R'), (R_SH, R_EL, R_WR), chest, spread_arms),
+    ):
+        ours = (head_pos[chain[1]] - head_pos[chain[0]]).length + (head_pos[chain[2]] - head_pos[chain[1]]).length
+        theirs = (f[j1] - f[j0]).length + (f[j2] - f[j1]).length
+        v = frame.inverted() @ (f[j2] - f[j0])
+        # Sideways fully, forward/back partly: a wider angle away from the hanging line in every direction.
+        v = frame @ Vector((v.x * k, v.y * (1 + (k - 1) * 0.45), v.z))
+        reach = min(v.length * ours / theirs, ours * 0.995)
+        target = head_pos[chain[0]] + v.normalized() * reach
+        mid = (f[j0] + f[j2]) * 0.5
+        _solve_chain(sk, local, root, chain, target, f[j1] - mid)
+        world, head_pos = sk.fk(local, root)
+    # Feet and hands: aim at the toes / index fingers.
     for bone, a, b, child in LIMBS:
+        if not bone.startswith('foot'):
+            continue
         world, head_pos = sk.fk(local, root)
         cur = head_pos[child] - head_pos[bone]
         want = f[b] - f[a]
-        if cur.length < 1e-6 or want.length < 1e-6:
-            continue
-        sk.set_world(local, world, bone, cur.rotation_difference(want).to_matrix() @ world[bone])
+        if cur.length > 1e-6 and want.length > 1e-6:
+            sk.set_world(local, world, bone, cur.rotation_difference(want).to_matrix() @ world[bone])
     return local
 
 
-def build(rig, path, stance, names, *, pmin=18, pmax=45, body_height=1.62, sway=0.5):
-    """Bake the video cycle into two actions (`names` = first half, second half)."""
+def build(rig, path, stance, names, *, pmin=18, pmax=45, body_height=1.62, sway=0.5, frames=None,
+          spread_legs=1.0, spread_arms=1.0):
+    """Bake the video cycle into two actions (`names` = first half, second half). `frames` limits the search."""
     fps, world, image = load(path)
-    s, e = find_cycle(world, pmin, pmax)
+    lo, hi = frames or (0, len(world) - 1)
+    s, e = find_cycle(world[lo:hi + 1], pmin, pmax)
+    s, e = s + lo, e + lo
+    # Face forward on average: the dancer may stand turned to the camera.
+    yaws = [math.atan2(*(lambda v: (v.x, -v.y))(_basis(f[L_HIP] - f[R_HIP], UP) @ Vector((0, -1, 0)))) for f in world[s:e + 1]]
+    mean_yaw = math.atan2(sum(math.sin(y) for y in yaws), sum(math.cos(y) for y in yaws))
+    turn = Matrix.Rotation(-mean_yaw, 3, 'Z')
+    world = [[turn @ p for p in f] for f in world]
     print(f'  video cycle frames {s}-{e} ({(e - s) / fps:.2f}s)')
     sk = Skeleton(rig)
     stance_local, stance_root = stance
@@ -137,7 +168,13 @@ def build(rig, path, stance, names, *, pmin=18, pmax=45, body_height=1.62, sway=
     for i in range(s, e + 1):
         h = hips_img[i]
         root = stance_root + Vector((-(h.x - mean_x) * px_to_m * sway, 0, -(h.y - mean_y) * px_to_m))
-        keys.append((pose_frame(sk, stance_local, world[i], root), root))
+        keys.append((pose_frame(sk, stance_local, world[i], root, spread_legs, spread_arms), root))
+        if os.environ.get('MOSH_VDBG'):
+            _, hp = sk.fk(keys[-1][0], root)
+            f = world[i]
+            leg = (f[L_HIP] - f[L_KNEE]).length + (f[L_KNEE] - f[L_ANK]).length
+            ours = (hp['upperleg01.L'] - hp['lowerleg01.L']).length + (hp['lowerleg01.L'] - hp['foot.L']).length
+            print(f'    f{i}: video gap/leg {(f[L_ANK] - f[R_ANK]).length / leg:.2f}  ours {(hp["foot.L"] - hp["foot.R"]).length / ours:.2f}')
     # Close the loop exactly (last key = first), settle the whole cycle on the floor, then split it.
     keys[-1] = keys[0]
     keys = settle_keys(rig, keys)

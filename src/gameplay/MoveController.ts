@@ -24,6 +24,8 @@ export interface ActiveMove {
   layered: boolean;
   /** Set once the landing phase was reached (air moves). */
   landed: boolean;
+  /** Index into `def.clipVariants` (0 without variants). */
+  variant: number;
 }
 
 export type MoveEvent =
@@ -53,6 +55,7 @@ export class MoveController {
   private lastFullEnd = -Infinity;
   private lastFullId = '';
   private alternateFlip = new Map<string, boolean>();
+  private variantOf = new Map<string, number>();
   private events: MoveEvent[] = [];
 
   constructor(moves: readonly MoveDefinition[]) {
@@ -148,6 +151,7 @@ export class MoveController {
     this.bailUntil = this.lastFullEnd = -Infinity;
     this.lastFullId = '';
     this.alternateFlip.clear();
+    this.variantOf.clear();
     this.events = [];
   }
 
@@ -196,6 +200,11 @@ export class MoveController {
       mirror = !prev;
       this.alternateFlip.set(def.id, mirror);
     }
+    // A new left/right cycle (unmirrored half) moves on to the next clip variant.
+    const n = def.clipVariants?.length ?? 1;
+    let variant = this.variantOf.get(def.id) ?? n - 1;
+    if (!mirror) variant = (variant + 1) % n;
+    this.variantOf.set(def.id, variant);
     const move: ActiveMove = {
       def,
       seq: ++this.seq,
@@ -205,6 +214,7 @@ export class MoveController {
       linked,
       layered,
       landed: false,
+      variant,
     };
     if (def.layer === 'full') this.lastFullId = def.id;
     this.events.push({ type: 'start', move });

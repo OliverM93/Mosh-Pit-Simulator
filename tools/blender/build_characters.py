@@ -25,7 +25,22 @@ from authoring import AUTHORED, author  # noqa: E402
 import videomocap  # noqa: E402
 from retarget import POSES  # noqa: E402
 
-VIDEO_2STEP = os.path.join(os.path.dirname(__file__), 'video', 'two_step_pose.json')
+VIDEO_DIR = os.path.join(os.path.dirname(__file__), 'video')
+# Video mocap clips (D-031): (clip names first/second half, landmark file, options)
+VIDEO_CLIPS = [
+    (('two_step', 'two_step_m'), 'two_step_pose.json', {'spread_legs': 2.3, 'spread_arms': 1.7}),
+    (('two_step_b', 'two_step_b_m'), 'two_step_b_pose.json', {'spread_legs': 2.3, 'spread_arms': 1.7}),
+]
+
+
+def build_video_clips(rig, only=None):
+    out = []
+    for names, file, opts in VIDEO_CLIPS:
+        if only and names[0] not in only:
+            continue
+        videomocap.build(rig, os.path.join(VIDEO_DIR, file), POSES['stance'], names, **opts)
+        out += [(bpy.data.actions[n], 20) for n in names]
+    return out
 import textures as tx  # noqa: E402
 from variants import VARIANTS  # noqa: E402
 
@@ -444,9 +459,7 @@ def main():
             for m in ([False, True] if mirrored else [False]):
                 n = author(rig, name + ('_m' if m else ''), dur, spec, mirror=m)
                 clips.append((bpy.data.actions[name + ('_m' if m else '')], n))
-        if not only or 'two_step' in only:
-            videomocap.build(rig, VIDEO_2STEP, POSES['stance'], ('two_step', 'two_step_m'))
-            clips += [(bpy.data.actions['two_step'], 20), (bpy.data.actions['two_step_m'], 20)]
+        clips += build_video_clips(rig, only)
     if args.keyclips:
         import json
         with open(args.keyclips) as f:
@@ -662,7 +675,7 @@ def export_anims(args, rig):
         for name, dur, spec, mirrored in AUTHORED:
             for m in ([False, True] if mirrored else [False]):
                 author(rig, name + ('_m' if m else ''), dur, spec, mirror=m)
-        videomocap.build(rig, VIDEO_2STEP, POSES['stance'], ('two_step', 'two_step_m'))
+        build_video_clips(rig)
     if args.keyclips:
         with open(args.keyclips) as f:
             data = json.load(f)

@@ -83,7 +83,7 @@ Regeln:
 | CMU Graphics Lab Motion Capture Database, BVH-Konvertierung B. Hahne (Takes in `tools/blender/build_characters.py`, `CLIPS`) | Carnegie Mellon University | frei für Forschung und kommerzielle Nutzung | 2026-11-21 |
 | Bandai Namco Research Motion Dataset 1 (Kampfhaltung, „chimpira“-Walk/Run/Dash, High Kick; Kalibrierung: bow_normal) | Bandai Namco Research Inc. (Kobayashi et al. 2023, arXiv:2306.08861) | **CC BY-NC 4.0** – nur nicht-kommerziell, Namensnennung | 2026-11-22 |
 
-| `tools/blender/video/two_step_pose.json` (Gelenkpositionen, abgeleitet per MediaPipe Pose) | Referenzvideo vom Owner bereitgestellt (privat; Video nicht im Repo) | nur private Nutzung, Herkunft des Videos vor Veröffentlichung klären | 2026-11-23 |
+| `tools/blender/video/two_step_pose.json`, `two_step_b_pose.json` (Gelenkpositionen, abgeleitet per MediaPipe Pose) | Referenzvideo vom Owner bereitgestellt (privat; Video nicht im Repo) | nur private Nutzung, Herkunft des Videos vor Veröffentlichung klären | 2026-11-23 |
 
 > **Achtung (D-029):** Die Bandai-Clips (`stance`, `swagger`, `jog`, `dash`, `high_kick` in `public/models/anims.glb`)
 > sind nur für nicht-kommerzielle Nutzung lizenziert. Vor einer kommerziellen Veröffentlichung müssen sie ersetzt

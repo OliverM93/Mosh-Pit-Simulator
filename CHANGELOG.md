@@ -9,6 +9,8 @@ Versionierung nach [SemVer](https://semver.org/lang/de/) (vor 1.0 kann sich alle
 
 - 2-Step neu aus einem Referenzvideo per Video-Mocap (MediaPipe, D-031): echter Bewegungsablauf mit Hop, flachen
   Kicks, kreuzendem Bein, Oberkörperrotation und weiten Armschwüngen; gehalten als nahtloser Loop.
+- 2-Step: Beine deutlich weiter gespreizt, Arme weiter nach außen; zweite Aufnahme als Variante, gehaltene 2-Steps
+  wechseln zwischen beiden Aufnahmen.
 
 - Neue Armbewegungen (D-030): Arm Swing (kraftvoller Rückwärtskreis, abwechselnd, Oberkörper dreht mit) und
   Windmill nach vorn (Arms + vorwärts); 2-Step neu mit Bein, das über das andere schwingt.

@@ -36,6 +36,8 @@ export interface MoveDefinition {
   clipRange: [number, number];
   /** Mirror on every second consecutive use (alternating sides). */
   alternate?: boolean;
+  /** Alternative clips (e.g. two recorded 2-steps); each new left/right cycle uses the next one. */
+  clipVariants?: string[];
   /** Holding the button keeps repeating the move (rhythmic footwork/arms)… */
   repeatOnHold?: boolean;
   /** …from this progress on: late enough that the full motion plays (defaults to `cancelFrom`). */

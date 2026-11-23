@@ -17,8 +17,12 @@ Format: **Datum · Entscheidung** – Begründung · Betroffene Systeme · Alter
   pro Schritt; Halten spielt die Hälften nahtlos hintereinander.
 - **Daten:** Das Video wird nicht ins Repo übernommen (nur die abgeleiteten Gelenkzahlen). MediaPipe ist nur ein
   Offline-Werkzeug, keine Laufzeit-Abhängigkeit.
-- **Grenzen:** Monokulare Tiefe ist ungenau (Beine etwas weniger gespreizt als im Video), einzelne Armspitzen
-  verschieben sich um 1–2 Frames.
+- **Grenzen:** Monokulare Tiefe ist ungenau, einzelne Armspitzen verschieben sich um 1–2 Frames.
+- **Nachtrag (Owner: Beine stärker spreizen, Arme weiter nach außen):** Arme und Beine werden als Zwei-Knochen-IK
+  auf den Endpunkt (Knöchel/Handgelenk) gelöst; dessen Winkel weg von der Hängelinie wird verstärkt (seitlich
+  ×2,3 / ×1,7, vor-zurück anteilig). Ergebnis Beine: Fußabstand im Mittel ~ +33 % gegenüber dem Video. Zweites
+  Referenzvideo (Frames 16–52) als Variante `two_step_b`; gehaltene 2-Steps wechseln pro Links-Rechts-Zyklus
+  zwischen den Aufnahmen (`clipVariants`). Die mittlere Körperdrehung des Tänzers wird herausgerechnet.
 - **Alternativen:** Weitere IK-Handanimation (vom Owner als unnatürlich bewertet), Mocap-Datensätze (kein
   Hardcore-2-Step verfügbar), Mixamo (nicht erreichbar).
 

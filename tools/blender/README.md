@@ -54,8 +54,8 @@ python3.12 -m venv .cache/mp-venv && .cache/mp-venv/bin/pip install "mediapipe==
 .cache/mp-venv/bin/python tools/blender/video/pose_video.py clip.mp4 pose.json overlay_dir/
 ```
 
-Then reduce `pose.json` to `tools/blender/video/<move>_pose.json` (world + image landmarks) and wire it in
-`build_characters.py` (`VIDEO_2STEP`).
+Then reduce `pose.json` to `tools/blender/video/<move>_pose.json` (world + image landmarks) and add it to
+`VIDEO_CLIPS` in `build_characters.py` (spread factors per clip). `MOSH_VDBG=1` prints video vs. figure foot gaps.
 
 ## Files
 

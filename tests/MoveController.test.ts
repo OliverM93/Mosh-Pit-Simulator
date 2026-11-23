@@ -102,4 +102,17 @@ describe('MoveController', () => {
     expect(starts.length).toBeGreaterThanOrEqual(3);
     expect(starts[0]).toBeCloseTo(step.duration * (step.repeatFrom ?? step.cancelFrom), 1);
   });
+
+  it('switches clip variants on every new left/right cycle', () => {
+    const mc = new MoveController(MOVES);
+    const step = getMove('two_step');
+    const variants: number[] = [];
+    let t = 0;
+    for (let i = 0; i < 4; i++) {
+      mc.press('footwork', t, STILL);
+      variants.push(mc.full!.variant);
+      t += step.duration * step.cancelFrom + 0.01;
+    }
+    expect(variants).toEqual([0, 0, 1, 1]);
+  });
 });

@@ -16,6 +16,7 @@ export const MOVES: MoveDefinition[] = [
     layer: 'full',
     duration: 0.65,
     clip: 'two_step',
+    clipVariants: ['two_step', 'two_step_b'],
     clipRange: [0, 1],
     alternate: true,
     repeatOnHold: true,
