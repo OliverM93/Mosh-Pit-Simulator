@@ -472,20 +472,23 @@ BlendTree
 | Zuschauer: Wippen, Faust, Arme verschränkt, Jubeln, „Ohh“, Handy hoch | Loops mit Varianten | Paket / Aufnahme | ✔ |
 | Band: Gesang, Gitarre, Bass, Drums | Loops | Paket / Aufnahme | ✔ (einfach) |
 
-**Beschaffung – Optionen** (Lizenz jeweils vor Nutzung prüfen, Register in `ASSET_PIPELINE.md`):
-1. **Professionelle Mocap-Pakete** (Fortbewegung, Stolpern, Fallen, Aufstehen, Kampf, Jubel): größte
-   Zeitersparnis, gleichmäßige Qualität; kostenpflichtig, Lizenz muss Weitergabe im Spiel erlauben.
-2. **Mixamo:** kostenlos, viele passende Clips; Adobe-Konto nötig und in der Cloud-Umgebung nicht erreichbar.
-   Rohdateien sollten nicht im öffentlichen Repo liegen [V: Nutzungsbedingungen prüfen].
-3. **Eigene Aufnahmen markerlos** (z. B. Move.ai, Rokoko Video, Plask, DeepMotion – Mehrkamera-Lösungen liefern
-   deutlich bessere Füße/Tiefe als unsere Einzelkamera-Pipeline): einzige realistische Quelle für authentische
-   Hardcore-Moves. Braucht Tänzer, Platz, ein paar Smartphones; Nachbearbeitung in Blender oder Cascadeur.
-4. **Animator (Auftrag):** beste Kontrolle über Stil und Übertreibung, höchster Preis.
-5. **Freie Datensätze:** CMU (frei, bleibt), Bandai (nur nicht-kommerziell), Tanz-Datensätze wie AIST++ (Krump,
-   Breaking – Lizenz der Bewegungsdaten prüfen).
+**Beschaffung – nur kostenlose Quellen (Owner-Vorgabe D-033, Stand der Lizenzprüfung 2026-11-24)**
 
-Empfehlung: **1 (+ ggf. 2) für Fortbewegung/Reaktionen, 3 für die Signature-Moves.** Die Video-Mocap- und
-IK-Skripte werden nicht weiterentwickelt (bleiben als Referenz im Repo).
+| Quelle | Inhalt | Lizenz / kommerziell | Zugang | Einsatz |
+| --- | --- | --- | --- | --- |
+| CMU Motion Capture (BVH von B. Hahne) | 2 548 Takes, u. a. Stil-Gänge (105_33 „MachoWalk“, 142_04 „Cool“), Läufe mit Stopps/Wenden (78, 102, 128), Warte-Posen (137_41 „Strong Man Wait“), Sprünge (91, 105, 118), **Zusammenstoß zweier Personen (22_12/23_12)**, Stolpern (91_59, 104_13), Fallen (90_16, 90_18), **Aufstehen aus Bauch-/Rücken-/Seitenlage (140_*)**, Boxen, Kicks, Charleston (93, 103), Breakdance | frei für alle Zwecke inkl. kommerziell (Nennung erbeten) | Git, in der Cloud erreichbar | **Hauptquelle des Slices** |
+| Mixamo | große Bibliothek generischer Clips | kostenlos mit Adobe-Konto, lizenzfrei in kommerziellen Spielen; Weitergabe als eigenständige Dateien untersagt [V: Wortlaut vom Owner prüfen] | nur Owner lokal (Login) | optionale Ergänzung; Rohdateien **nicht** ins öffentliche Repo (git-ignored), Spiel läuft ohne sie |
+| Quaternius Universal Animation Library | ~120 handgekeyte Game-Clips | CC0 | Website/itch (Host nicht freigegeben) | Kandidat für Interaktionen, stilisiert |
+| 100STYLE | Fortbewegung in 100 Stilen | CC BY 4.0 [V] | Zenodo (Host nicht freigegeben) | Kandidat für Gang-Stile |
+| Eigene Aufnahmen mit **FreeMoCap** (Open Source) + 2–4 Webcams/Handys | Hardcore-Moves (2-Step, Windmill, Headbang, Pogo, Push) | Software frei; Aufnahmen gehören dem Owner | lokal beim Owner | beste freie Quelle für authentische Mosh-Moves |
+| Bandai Namco Dataset | Stile, Kampf | CC BY-NC 4.0 – **nicht kommerziell** | – | nur Altbestand, nicht im Godot-Projekt |
+| LAFAN1 (Ubisoft), AMASS/AIST++ (SMPL) | Fortbewegung, Tanz | NC/ND bzw. SMPL nicht-kommerziell | – | **nicht nutzen** |
+
+Kostenpflichtige Optionen (nur zur Information, werden nicht genutzt): Mocap-Pakete, Move.ai/Rokoko-Abos, Animator.
+
+Mosh-spezifische Moves ohne passende Aufnahme werden **aus echter Mocap abgeleitet** (Ausschnitte, Spiegeln,
+Zeitverlauf, Kombination von Unter-/Oberkörper verschiedener Takes, Retargeting) und nur prozedural *ergänzt*
+(Fuß-IK, Headbang-Additiv, Lean) – nie aus reinen Formeln gebaut.
 
 ### 7.4 Fußkontakt, Root Motion, Physik
 
@@ -554,6 +557,8 @@ Godot skinnt auf der GPU; der CPU-Aufwand liegt bei AnimationTree-Auswertung und
 ---
 
 ## 8. Spielersteuerung und Kamera
+
+> **Verbindlich ist jetzt [CONTROLS.md](CONTROLS.md) (D-034).** Der folgende Text war der Vorschlag vor der Owner-Entscheidung.
 
 **Steuerung**
 - Input Map: `move_*` (Stick + WASD), `sprint`, `footwork`, `arms`, `kick`, `acro`, `pause`, Menüaktionen;
@@ -647,7 +652,11 @@ und Owner-Playtests.
 
 ---
 
-## 12. Offene Entscheidungen des Owners
+## 12. Entscheidungen des Owners
+
+**Beantwortet am 2026-11-24 (D-033, D-034):** Null Budget, freie Quellen (Tabelle 7.3); Windows-PC; Godot 4.5.1;
+Referenz-GPU GTX 1060; `godot/` im selben Repo, kein LFS vorerst; Timing aus den Clips bestätigt; Steuerung an
+Claude delegiert → [CONTROLS.md](CONTROLS.md). Ursprüngliche Fragen zur Nachvollziehbarkeit:
 
 1. **Animationsquelle** (wichtigste Frage): Mocap-Pakete kaufen, Mixamo nutzen, eigene Aufnahmen mit Tänzern,
    Animator beauftragen – oder Kombination (Empfehlung: Pakete für Fortbewegung/Reaktionen + eigene Aufnahmen

@@ -7,6 +7,41 @@ Format: **Datum · Entscheidung** – Begründung · Betroffene Systeme · Alter
 
 ---
 
+### D-034 · 2026-11-24 · Steuerungskonzept für das Godot-Projekt
+- **Anlass:** Owner überlässt die Steuerung Claude (D-033) – Vorgabe: präzise, Tastatur/Maus + Gamepad, Springen,
+  Ausweichen, Schubsen, Interaktion, Combos ohne gegenseitiges Blockieren, zentral konfigurierbar.
+- **Entscheidung:** Details in [CONTROLS.md](CONTROLS.md). Face-Buttons = Kategorien (A Springen/Akro, X Footwork,
+  Y Arms, B Kick), Schultertasten = Ausweichen (LB) und Schubsen/Interagieren (RB), Trigger = Sprint (RT) und
+  Headbang (LT). Tastatur bildet das Pad nach (Raute IJKL, U/O); die 2.0-Belegung (Q/E/R) bleibt als Preset.
+  Körper-Ebenen (Ganzkörper/Arme/Kopf) statt globaler Sperren; Kamera bleibt Richtung Band (D-029) mit
+  federndem Umschauen ±40°.
+- **Geändert:** Acro neutral = Sprung statt Butterfly Kick; Butterfly ist jetzt Luft-Kick aus dem Sprung (wie D-011).
+- **Alternativen:** freie Orbit-Kamera (widerspricht D-029, Richtungen wechseln in Hektik), Modifikator-Akkorde für
+  Varianten (fehleranfällig), Maus-zentrierte Belegung (Gameplay braucht keine Maus-Präzision).
+
+### D-033 · 2026-11-24 · Owner-Vorgaben für die Godot-Neuentwicklung
+- **Null Budget:** keine Ausgaben für Software, Assets, Animationen, Plugins, Dienste. Nur freie/Open-Source-Quellen,
+  Lizenz und kommerzielle Nutzbarkeit werden je Quelle geprüft (Register in `ASSET_PIPELINE.md`). Kostenpflichtige
+  Optionen dürfen nur als Information genannt werden.
+- **Animationen:** generische Bewegungen aus freien Mocap-Quellen (CMU, optional Mixamo durch den Owner); Mosh-
+  spezifische Moves selbst erstellen/anpassen (Blender, freie Mocap, Retargeting, prozedurale Ergänzung) – aber keine
+  Bewegungen aus bloßen programmierten Rotationen.
+- **Figuren:** kostenlos; MakeHuman als Ausgangspunkt, nicht automatisch als Endqualität; bestehende Assets
+  behalten, wenn geeignet. Zielbild stilisiert, ungefähr PS3-Niveau.
+- **Plattform/Engine:** Windows-PC, **Godot 4.5.x – festgelegt auf 4.5.1-stable** (Download-Build
+  `4.5.1.stable.official.f62fdbde1`); neuere Version nur bei konkretem technischen Vorteil.
+  Ziel 60 FPS auf durchschnittlichem Gaming-PC, vorläufige GPU-Referenz GTX 1060; reale Anforderungen per Messung.
+- **Move-Timing (bestätigt):** Animationen definieren Dauer und Phasen (Absprung, Treffer, Landung, Erholung,
+  Abbruchfenster) über Marker im Clip; Gameplay entscheidet weiterhin, ob/was ausgeführt, unterbrochen und
+  bewertet wird. Ergänzt D-028 (Clip-Zeit = Move-Fortschritt gilt nur noch ohne Zerrung).
+- **Repo:** Godot-Projekt unter `godot/` im bestehenden Repo, eigener Branch, Three.js-Projekt bleibt unverändert.
+  **Kein Git LFS**, solange die Asset-Größen es nicht erfordern (Messung im Handoff/Asset-Register).
+- **Vorgehen:** Vertical Slice zuerst (eine Location, steuerbarer Spieler, 8–12 NPCs, Idle/Lauf/Mosh-Animationen,
+  Kamera, Kollisionen, erste Mosh-Interaktionen, Licht, stabile Performance); Qualität vor Umfang; keine
+  bestehenden Features oder Designentscheidungen eigenmächtig verwerfen.
+- **Cloud-Umgebung:** Owner hat eine Umgebung „Mosh-Pit-Simulator“ mit Zugriff auf `github.com` freigegeben (für
+  Godot-Downloads); Rendering-Tests laufen über Xvfb + Mesa-Lavapipe (Software-Vulkan).
+
 ### D-032 · 2026-11-24 · Engine-Wechsel zu Godot 4 + GDScript (Owner), Analyse und Plan vor der Migration
 - **Anlass:** Owner ist mit Animationen, Übergängen und Look trotz mehrerer Iterationen (D-029 – D-031)
   unzufrieden und ordnet eine Neuentwicklung in Godot 4.x mit GDScript an. Erster Auftrag: nur Analyse + Plan.

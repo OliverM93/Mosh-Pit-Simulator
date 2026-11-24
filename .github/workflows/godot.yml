@@ -1,0 +1,32 @@
+name: Godot
+
+on:
+  push:
+    paths: ['godot/**', '.github/workflows/godot.yml']
+  pull_request:
+    paths: ['godot/**', '.github/workflows/godot.yml']
+
+permissions:
+  contents: read
+
+jobs:
+  tests:
+    name: Import · Tests · Smoke run
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      GODOT_VERSION: 4.5.1-stable
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Godot (pinned, D-033)
+        run: |
+          curl -sSL -o godot.zip "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}/Godot_v${GODOT_VERSION}_linux.x86_64.zip"
+          unzip -q godot.zip
+          mv "Godot_v${GODOT_VERSION}_linux.x86_64" /usr/local/bin/godot
+          godot --version
+      - name: Import assets
+        run: godot --headless --path godot --import
+      - name: Unit tests
+        run: godot --headless --path godot -s res://tests/run_tests.gd
+      - name: Smoke run of the slice
+        run: godot --headless --path godot --fixed-fps 60 -s res://tests/smoke_main.gd

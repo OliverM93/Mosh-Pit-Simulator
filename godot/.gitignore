@@ -1,0 +1,6 @@
+# Godot editor/import cache and builds
+.godot/
+/build/
+*.tmp
+# Mixamo raw downloads (Adobe terms: no redistribution as standalone files; public repo)
+assets_local/
