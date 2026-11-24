@@ -2,48 +2,36 @@
 
 Kurz und praktisch. Nach jeder größeren Aufgabe aktualisieren (älteren Stand überschreiben, nicht anhängen).
 
-## Stand: 2026-11-22 – Prototyp MOSH PIT 2.0
+## Stand: 2026-11-24 – Godot-Migration: Analyse und Plan
 
-**Branch:** `claude/mosh-pit-2-prototype` (abgezweigt von `claude/laughing-bell-msxkz3`, der als Referenz für den
-alten Stand bleibt; dessen PR gegen `main` wartet weiter auf Freigabe). Kein PR für 2.0 angelegt.
+**Branch:** `claude/godot-migration` (abgezweigt von `claude/mosh-pit-2-prototype`). Nur Dokumentation geändert,
+kein Code. Three.js-Stände bleiben unverändert: `claude/mosh-pit-2-prototype` (2.0-Prototyp),
+`claude/laughing-bell-msxkz3` (Phase 1, PR gegen `main` wartet auf Freigabe). Kein PR angelegt.
 
 ## Zuletzt erledigt
 
-- **D-031:** 2-Step aus dem Referenzvideo des Owners per MediaPipe-Video-Mocap (`tools/blender/videomocap.py`,
-  Daten `tools/blender/video/two_step_pose.json`). Weitere Moves lassen sich genauso aus Videos gewinnen.
+- Owner ordnet Neuentwicklung in Godot 4.x + GDScript an (D-032). Erster Auftrag: Analyse + Plan, keine Migration.
+- `docs/GODOT_MIGRATION.md`: Bestandsaufnahme, Systemmatrix (übernehmen/anpassen/neu/entfällt), Ursachen der
+  Animationsprobleme mit Messwerten, Godot-Architektur, Animations-/Crowd-/Steuerungskonzept, Asset-Reuse,
+  Plan mit Gates A–D, Risiken, offene Entscheidungen.
+- Zuvor (2.0-Prototyp): 2-Step aus zwei Referenzvideos (D-031) – vom Owner weiterhin als unzureichend bewertet.
 
-- **D-030:** Arm Swing + Windmill (vorwärts) neu, 2-Step mit kreuzendem Bein, Halten = Rhythmus, frühere
-  Cancel-Fenster, alle Clips auf den Boden gesetzt (NPCs versinken nicht mehr). 7 Moves, 43 Tests.
+## Offene Punkte
 
-- **Owner-Feedback umgesetzt (D-029):** feste Kamera Richtung Band; Animationen neu: Kampfhaltung + Swagger/Run/Dash
-  (Bandai-Mocap, CC BY-NC), Pose-Matching aller Moves auf die Grundhaltung, 2-Step/Windmill per IK
-  (`tools/blender/authoring.py`), Locomotion-Mischung über vier Stufen. Viewer: `viewer.html?clip=two_step&cam=back`.
-
-- Konzept „MOSH PIT 2.0“ (Owner) analysiert, Plan in `docs/PROTOTYPE_2.md`, Entscheidung D-028.
-- Neu gebaut: `MovementController`, `MoveController`, `ComboManager`, `BeatManager`, `PitSession`,
-  `AnimationController` (Ebenen), `PlayerView`, Chase-`CameraController`, HUD, Menüs (nur ein Testsong).
-- Entfernt: Rhythmus-Bewertung, alte Move-/Combo-Systeme, Modi/Song-Auswahl, eigene Songs (Loader), Box-Rig-Figuren.
-- Verifiziert: `npm run check` grün (42 Tests), Browser-Durchlauf (Headless, deterministischer Bot) ohne Fehler:
-  Sprint, Spinkick, 2-Step + Windmill (LAYERED), Cartwheel, Butterfly Kick, Combo-Timer und Banken.
-
-## Offene Probleme
-
-- Nicht auf echter GPU/mit echtem Gamepad gespielt – Steuerungsgefühl ist ungetunt (Startwerte).
-- Grafik noch nicht auf THUG2-/Def-Jam-Niveau (Haare, Kleidungsdetails, Venue, Licht) – nächster großer Block.
-- Kein Aufsteh-Clip nach Bail; Cartwheel-Richtung des Mocap-Clips nicht gegen die Laufrichtung geprüft.
-- Bandai-Clips sind nur nicht-kommerziell lizenziert (CC BY-NC) – vor kommerzieller Nutzung ersetzen.
-- Grundhaltung hält die Fäuste recht hoch (Boxer-Deckung) – ggf. per IK absenken, wenn der Owner es anders will.
-- Testsong ist der Synth-Platzhalter „Basement Rules“.
+- **Owner-Entscheidungen** (GODOT_MIGRATION.md, Abschnitt 12): Animationsquelle, Figuren-Weg, Godot-Version und
+  Plattform, Netzwerkfreigabe für Godot in der Cloud, Interaktions-Eingabe, Timing-Prinzip, Referenz-Hardware, Repo.
+- Godot ist in der Cloud-Umgebung nicht installierbar: github.com wird vom Proxy blockiert (403), Godot ist auch
+  nicht über PyPI, npm oder apt verfügbar – Freigabe nötig, bevor Claude headless importieren/testen kann.
+- Bekannter Exportfehler der Blender-Pipeline: retargetete Clips laufen 25 % zu langsam (30-Hz-Keys auf 24-fps-
+  Frames, `retarget.py`/`write_action`). Im Three.js-Stand bewusst nicht korrigiert (keine Änderungen dort).
 
 ## Nächster empfohlener Schritt
 
-1. Owner spielt an: `git fetch && git checkout claude/mosh-pit-2-prototype && npm install && npm run dev`.
-2. Tuning nach Feedback (`MOVEMENT_TUNING`, `CAMERA_TUNING`, `COMBO_TUNING`, Move-Daten).
-3. Grafik-Block (PROTOTYPE_2.md, Schritt 6).
+1. Owner beantwortet Abschnitt 12.
+2. Phase 0: Godot-Version pinnen, Binary verfügbar machen, Projekt-Skelett `godot/`, Test-Framework, CI.
+3. Gate A (Bewegung) mit neuen Animationen – der eigentliche Qualitätsbeweis.
 
 ## Orientierung für die nächste Session
 
-- Einstieg: `CLAUDE.md` → `docs/PROTOTYPE_2.md` → `src/gameplay/PitSession.ts`.
-- Moves: `src/data/moves.ts`; Scoring: `COMBO_TUNING` in `ComboManager.ts`; Bewegung: `MOVEMENT_TUNING`.
-- Browser-Debug: `window.moshpit` (Game). Für deterministische Tests `moshpit.state = 'debug'` setzen und
-  `moshpit.session.update(...)` / `moshpit.view.update(...)` selbst aufrufen (die Schleife rendert dann nur).
+- Einstieg: `CLAUDE.md` → `docs/GODOT_MIGRATION.md` → `docs/DECISIONS.md` (D-032, D-028, D-029).
+- Spiellogik als Port-Vorlage: `src/gameplay/` (+ `tests/` als Spezifikation), Daten: `src/data/`.

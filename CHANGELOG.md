@@ -5,6 +5,12 @@ Versionierung nach [SemVer](https://semver.org/lang/de/) (vor 1.0 kann sich alle
 
 ## [Unreleased]
 
+### Godot-Migration – Analyse und Plan (Branch `claude/godot-migration`, D-032)
+
+- `docs/GODOT_MIGRATION.md`: Bestandsaufnahme, Systembewertung, Ursachenanalyse der Animationsprobleme (mit
+  Messwerten aus `anims.glb`), Godot-Zielarchitektur, Konzepte für Animation, Crowd, Steuerung und Kamera,
+  Asset-Wiederverwendung, Migrationsplan mit Gates, Risiken, offene Owner-Entscheidungen. Noch kein Godot-Code.
+
 ### MOSH PIT 2.0 – Prototyp (Branch `claude/mosh-pit-2-prototype`, D-028)
 
 - 2-Step neu aus einem Referenzvideo per Video-Mocap (MediaPipe, D-031): echter Bewegungsablauf mit Hop, flachen

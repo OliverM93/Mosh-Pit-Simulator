@@ -7,6 +7,24 @@ Format: **Datum · Entscheidung** – Begründung · Betroffene Systeme · Alter
 
 ---
 
+### D-032 · 2026-11-24 · Engine-Wechsel zu Godot 4 + GDScript (Owner), Analyse und Plan vor der Migration
+- **Anlass:** Owner ist mit Animationen, Übergängen und Look trotz mehrerer Iterationen (D-029 – D-031)
+  unzufrieden und ordnet eine Neuentwicklung in Godot 4.x mit GDScript an. Erster Auftrag: nur Analyse + Plan.
+- **Entscheidung:** Neues Godot-Projekt (vorgeschlagen unter `godot/` im selben Repo) auf eigenem Branch
+  `claude/godot-migration`; der Three.js-Stand bleibt unverändert auf seinen Branches. Analyse, Zielarchitektur,
+  Migrationsplan mit Gates und Risiken: [GODOT_MIGRATION.md](GODOT_MIGRATION.md).
+- **Befund (Kurz):** Die Animationsprobleme liegen vor allem an Daten und Vorgehen, nicht an Three.js – Mocap wird
+  beim Export um 25 % verlangsamt (30-Hz-Keys auf 24-fps-Frames) und im Spiel auf feste Dauern umgezerrt, Moves
+  werden zu 18–30 % in die Grundhaltung überblendet, fünf Quellen mit verschiedenem Stil, keine Fuß-IK, Crowd
+  synchron und mit Box-Rig-Clips. Der Wechsel lohnt sich wegen Werkzeugen (AnimationTree, Retargeting, IK,
+  Teil-Ragdoll, Volumetrie, Editor), aber nur zusammen mit professionell aufgenommenen/animierten Clips.
+- **Revidiert:** D-021 (Stack beibehalten – deren Hauptgrund, sample-genaue Eingabezeiten für ein Rhythmusspiel,
+  ist mit D-028 entfallen). **Vorgeschlagen, Owner-Bestätigung offen:** Zeitwerte der Moves (Dauer, Absprung,
+  Landung, Cancel) kommen aus Markern im Clip statt aus festen Dauern (Ergänzung zu D-028); Grafikziel PS3-
+  Generation statt PS1/PS2-Retro (ersetzt D-007/D-024 im neuen Projekt).
+- **Alternativen:** Three.js weiter optimieren (Owner lehnt ab; Werkzeuglücken bleiben), Unity/Unreal (Owner gibt
+  Godot vor).
+
 ### D-031 · 2026-11-23 · 2-Step aus Video-Mocap (MediaPipe) statt Handanimation
 - **Anlass:** Owner: 2-Step wirkt unnatürlich; Referenzvideo (2,8 s, 30 fps) + Gemini-Bewegungsanalyse geliefert.
 - **Entscheidung:** Pose-Schätzung mit MediaPipe Pose 0.10.14 (offline, Modell im Paket) liefert 3D-Gelenkpositionen

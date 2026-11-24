@@ -91,7 +91,11 @@ Nach jeder größeren Aufgabe:
   den jeweiligen Systemen. Neue Abhängigkeiten in `TECHNICAL_ARCHITECTURE.md` dokumentieren.
 - Nichts Wichtiges nur im Chat lassen. Keine Funktionen dokumentieren, die nicht existieren.
 
-## Aktueller Stand (2026-11-22)
+## Aktueller Stand (2026-11-24)
+
+**Godot-Migration beschlossen** (D-032, Branch `claude/godot-migration`): Analyse und Plan in
+`docs/GODOT_MIGRATION.md`, Migration wartet auf die Owner-Entscheidungen dort (Abschnitt 12). Bis dahin gilt der
+Three.js-Stand unten; ihn nicht verändern.
 
 **MOSH PIT 2.0** (D-028, Branch `claude/mosh-pit-2-prototype`): THPS-artiger Prototyp – eine Location, Blender-Spieler
 mit Mocap (Kampfhaltung, Pose-Matching, IK-Moves, D-029), feste Kamera Richtung Band, Momentum-Movement, sechs Moves (hybride Eingabe, Ebenen, Phasen, Cancel-Fenster),
@@ -108,5 +112,5 @@ Combo-Timer, ein Testsong. Plan/Analyse: `docs/PROTOTYPE_2.md`. Alter Stand als 
 ## Weiterführend
 
 `README.md` · `CONTRIBUTING.md` · `CHANGELOG.md` · `docs/PROJECT_VISION.md` · `docs/GAME_DESIGN.md` ·
-`docs/PROTOTYPE_2.md` · `docs/COMBO_SYSTEM.md` · `docs/AUDIO_AND_MUSIC.md` · `docs/TECHNICAL_ARCHITECTURE.md` · `docs/ART_DIRECTION.md` ·
+`docs/PROTOTYPE_2.md` · `docs/GODOT_MIGRATION.md` · `docs/COMBO_SYSTEM.md` · `docs/AUDIO_AND_MUSIC.md` · `docs/TECHNICAL_ARCHITECTURE.md` · `docs/ART_DIRECTION.md` ·
 `docs/ASSET_PIPELINE.md` · `docs/ROADMAP.md` · `docs/DECISIONS.md` · `docs/SESSION_HANDOFF.md`

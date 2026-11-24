@@ -21,7 +21,18 @@ Ziel: Ein Song ist vollständig spielbar und fühlt sich wie ein kleiner Arcade-
 - ✅ Modi Arcade + Free Pit, Ergebnisbildschirm mit Note, Highscore/Best Combo gespeichert
 - ✅ Gamepad-Unterstützung (Standard-Mapping) – ⚠ noch nicht mit echter Hardware getestet
 
-## MOSH PIT 2.0 – Prototyp (aktuell, D-028)
+## Godot-Migration (aktuell, D-032)
+
+Plan und Gates: [GODOT_MIGRATION.md](GODOT_MIGRATION.md).
+
+- ✅ Phase 1 – Analyse (Bestandsaufnahme, Ursachen der Animationsprobleme, Asset-Bewertung)
+- ✅ Phase 2 – Architekturkonzept (Szenen, Charakter, AnimationTree, Crowd-Tiers, Kontaktmodell, Kamera)
+- ⬜ Phase 0 – Owner-Entscheidungen (Animationsquelle, Figuren, Version/Plattform, Cloud-Godot), Projekt-Skelett, CI
+- ⬜ Phase 3 – Vertical Slice: Gate A Bewegung · Gate B Steuerung/Kamera · Gate C Look · Gate D lebendige Crowd
+- ⬜ Phase 4 – Gameplay-Migration (Move/Combo/Beat/Hype, HUD, Audio als OGG, Menüs, Save, restliche Moves)
+- ⬜ Phase 5 – Qualitätssicherung
+
+## MOSH PIT 2.0 – Prototyp (Three.js, Referenz, D-028)
 
 - ✅ Analyse + Plan ([PROTOTYPE_2.md](PROTOTYPE_2.md))
 - ✅ Movement Controller (Momentum, Kurven, Skid, Sprint/Anlauf), Third-Person-Kamera (folgt Laufrichtung)
