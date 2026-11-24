@@ -676,6 +676,8 @@ Claude delegiert → [CONTROLS.md](CONTROLS.md). Ursprüngliche Fragen zur Nachv
 
 Projekt: [`godot/`](../godot/README.md). Umgesetzt mit Godot 4.5.1, nur kostenlosen Quellen.
 
+![Vertical Slice – Software-Rendering in der Cloud, echte GPU sieht schärfer aus](images/godot-slice.jpg)
+
 | Slice-Anforderung | Stand | Beleg |
 | --- | --- | --- |
 | Kleine, eigenständige Location | ✅ The Basement: Ziegel/Beton/Holz (prozedurale PBR-Materialien mit Normal Maps), Bühne mit Amps, Drums, Banner, Truss mit 4 Spots, Glühbirne über dem Pit, Rohre, Flyer, Merch-Tisch, Exit-Schild | Screenshots (Software-Rendering) |

@@ -15,7 +15,7 @@ Kurz und praktisch. Nach jeder größeren Aufgabe aktualisieren (älteren Stand 
 - Vertical Slice gebaut und geprüft: Basement-Location, steuerbarer Spieler, 10 Pit-NPCs + 26 Zuschauer,
   CMU-Mocap im Originaltempo, Root Motion, Fuß-IK, Kontakt-Reaktionen, Schubsen, Kamera, Licht, Musik/SFX.
   Messwerte und Lücken: `docs/GODOT_MIGRATION.md` Abschnitt 13.
-- 15 Unit-Tests + Smoke-Run grün (lokal und in der GitHub-CI `godot.yml`); Windows-Export gebaut, exportiertes Paket läuft headless.
+- 16 Unit-Tests + Smoke-Run grün (lokal und in der GitHub-CI `godot.yml`); Windows-Export gebaut, exportiertes Paket läuft headless.
 
 ## Offene Punkte
 
