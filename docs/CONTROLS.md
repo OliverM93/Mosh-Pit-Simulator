@@ -60,8 +60,8 @@ entfällt.
 
 | Ebene | Aktionen | Läuft über … | Wird blockiert durch |
 | --- | --- | --- | --- |
-| Ganzkörper (Beine) | Footwork, Kick, Springen/Akro, Ausweichen, Hochziehen | – | Reaktion (Stolpern/Fallen); andere Ganzkörper-Moves bis zu deren Abbruchfenster |
-| Arme | Arms-Moves, Schubser | Stehen, Laufen, Footwork | Kick/Akro (Eingabe wird gepuffert), Reaktionen |
+| Ganzkörper (Beine) | Footwork, Kick, Springen/Akro, Ausweichen, Schubser, Hochziehen | – | Reaktion (Stolpern/Fallen); andere Ganzkörper-Moves bis zu deren Abbruchfenster |
+| Arme | Arms-Moves | Stehen, Laufen, Footwork | Kick/Akro (Eingabe wird gepuffert), Reaktionen |
 | Kopf | Headbang | allem | Fallen |
 | Fortbewegung | Bewegen, Sprint | – | während Moves nur gedämpft (Lenkfaktor aus den Move-Daten) |
 
@@ -70,6 +70,9 @@ entfällt.
 - **Reaktionen** (Stagger, Stolpern, Fallen) kommen von außen und überschreiben alles; Eingaben während eines
   Sturzes verfallen, beim Aufstehen wird nicht gepuffert (kein ungewolltes Losrennen).
 - **Puffer** 0,3 s für alle Aktionen, Abbruchfenster kommen aus den Clip-Markern (D-033).
+
+> **Korrektur (D-035):** Der Schubser ist im Slice eine Ganzkörper-Bewegung (Armstoß mit Schritt aus echter Mocap,
+> automatisch zur nächsten Person im Kegel gedreht). Abbruchfenster ab 0,5 s.
 
 ## Kamera und Orientierung
 

@@ -7,6 +7,7 @@ var frame := 0
 var main: Node
 var started := {}
 var reactions := 0
+var player_reactions := {}
 var start_pos := Vector3.ZERO
 var plan := [
 	[20, 80, &"move_forward"], [80, 140, &"move_left"], [100, 140, &"sprint"], [150, 153, &"kick"],
@@ -26,7 +27,10 @@ func _process(_delta: float) -> bool:
 		start_pos = main.player.global_position
 		for m in root.get_tree().get_nodes_in_group(&"moshers"):
 			m.move_started.connect(func(_b, mv): started[mv.def.id] = started.get(mv.def.id, 0) + 1)
-			m.reacted.connect(func(_b, _k, _s): reactions += 1)
+			m.reacted.connect(func(b, k, _s):
+				reactions += 1
+				if b == main.player:
+					player_reactions[k] = player_reactions.get(k, 0) + 1)
 	for p in plan:
 		if frame == p[0]:
 			Input.action_press(p[2])
@@ -47,7 +51,7 @@ func _process(_delta: float) -> bool:
 		if is_nan(p.x) or is_nan(p.z) or absf(p.x) > 7.0 or absf(p.z) > 6.5 or p.y < -0.5:
 			errors.append("%s out of the room at %s" % [m.name, p])
 	print("moves started: ", started)
-	print("reactions: ", reactions)
+	print("reactions: ", reactions, "  of the player: ", player_reactions)
 	if errors.is_empty():
 		print("SMOKE OK")
 		quit(0)

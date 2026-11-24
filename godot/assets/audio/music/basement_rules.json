@@ -1,0 +1,64 @@
+{
+ "id": "basement_rules",
+ "title": "Basement Rules",
+ "artist": "Concrete Halo",
+ "bpm": 165,
+ "beatsPerBar": 4,
+ "offset": 0.05,
+ "sections": [
+  {
+   "type": "intro",
+   "bars": 4
+  },
+  {
+   "type": "verse",
+   "bars": 8
+  },
+  {
+   "type": "chorus",
+   "bars": 8
+  },
+  {
+   "type": "verse",
+   "bars": 8
+  },
+  {
+   "type": "breakdown",
+   "bars": 8
+  },
+  {
+   "type": "chorus",
+   "bars": 8
+  },
+  {
+   "type": "verse",
+   "bars": 8
+  },
+  {
+   "type": "breakdown",
+   "bars": 8
+  },
+  {
+   "type": "heavy",
+   "bars": 8
+  },
+  {
+   "type": "outro",
+   "bars": 4
+  }
+ ],
+ "events": [
+  {
+   "type": "beatdrop",
+   "bar": 28
+  },
+  {
+   "type": "beatdrop",
+   "bar": 52
+  },
+  {
+   "type": "beatdrop",
+   "bar": 60
+  }
+ ]
+}

@@ -1,5 +1,21 @@
 # Asset-Pipeline
 
+## Godot-Projekt (`godot/`, D-033: nur kostenlose Quellen)
+
+| Asset | Quelle | Lizenz / kommerziell | Erzeugung |
+| --- | --- | --- | --- |
+| Figuren `godot/assets/characters/char_*.glb` | Kopie der Three.js-Figuren (MakeHuman-Basis, eigene Kleidung/Texturen) | CC0-Basis + eigene Arbeit · ja | `tools/assets/fix_glb_textures.py` (JPEG neu kodiert) |
+| Animationen `godot/assets/animations/anims.glb` + `anims_meta.json` | CMU Motion Capture Database (Takes: 02_01, 09_01, 13_17, 13_29, 22_12, 76_11, 79_69, 82_08, 87_01, 88_06, 90_02, 90_05, 90_16, 91_59, 93_03, 118_10, 140_01) | frei für alle Zwecke inkl. kommerziell (Nennung erbeten) · ja | `godot/tools/anim/build_anims.py` |
+| Musik `godot/assets/audio/music/basement_rules.ogg` + `.json` | eigener Synth-Song (Three.js-Projekt, `src/audio`) | eigene Arbeit · ja | `godot/tools/audio/render_audio.mjs` |
+| SFX `godot/assets/audio/sfx/*.ogg` | eigene Synth-SFX (`src/audio/Sfx.ts`) | eigene Arbeit · ja | dito, auf −1 dBFS normalisiert |
+| Materialien der Location | prozedural im Code (`src/venue/surfaces.gd`) | eigene Arbeit · ja | zur Laufzeit |
+
+Nicht im Godot-Projekt: Bandai-Namco-Clips (nur nicht-kommerziell), Video-Mocap/IK-Clips (Owner-Bewertung), Mixamo
+(Owner kann es lokal nutzen; Rohdateien gehören nicht ins öffentliche Repo, Ordner `godot/assets_local/` ist ignoriert).
+
+**Größen (Git LFS, D-033):** `godot/assets` ≈ 11 MB (Figuren inkl. extrahierter Texturen ≈ 8 MB, Clips 1,2 MB, Audio 1,8 MB), größte Datei 1,6 MB (Song).
+Kein LFS nötig; neu prüfen, sobald einzelne Dateien > 20 MB oder `godot/assets` > 200 MB.
+
 ## Figuren-Pipeline (Blender)
 
 Echte Figuren entstehen per Skript in Blender (headless) aus MakeHuman (CC0) + CMU-Mocap, siehe

@@ -27,8 +27,11 @@ Plan und Gates: [GODOT_MIGRATION.md](GODOT_MIGRATION.md).
 
 - ✅ Phase 1 – Analyse (Bestandsaufnahme, Ursachen der Animationsprobleme, Asset-Bewertung)
 - ✅ Phase 2 – Architekturkonzept (Szenen, Charakter, AnimationTree, Crowd-Tiers, Kontaktmodell, Kamera)
-- ⬜ Phase 0 – Owner-Entscheidungen (Animationsquelle, Figuren, Version/Plattform, Cloud-Godot), Projekt-Skelett, CI
-- ⬜ Phase 3 – Vertical Slice: Gate A Bewegung · Gate B Steuerung/Kamera · Gate C Look · Gate D lebendige Crowd
+- ✅ Phase 0 – Owner-Entscheidungen (D-033), Steuerungskonzept (D-034), Projekt-Skelett, Test-Runner, CI, Windows-Export
+- 🟡 Phase 3 – Vertical Slice gebaut (D-035, Stand: GODOT_MIGRATION.md 13) – **Owner-Abnahme auf echter Hardware offen**
+  (Gates A–D: Bewegung, Steuerung/Kamera, Look, Crowd)
+- ⬜ Eigene Aufnahmen der Hardcore-Moves (FreeMoCap): 2-Step, Windmill, Arm Swing, Headbang, Schubser
+- ⬜ Figuren-Upgrade (Haare, Kleidung mit Normal Maps, Finger-Rig) – kostenlos (MakeHuman/MPFB2-Assets, Blender)
 - ⬜ Phase 4 – Gameplay-Migration (Move/Combo/Beat/Hype, HUD, Audio als OGG, Menüs, Save, restliche Moves)
 - ⬜ Phase 5 – Qualitätssicherung
 

@@ -55,12 +55,14 @@ func _process(delta: float) -> void:
 	_fade_occluders()
 
 
-## Watchers between the camera and the player fade out (alpha) instead of blocking the view.
+## People between the camera and the player fade out (alpha) instead of blocking the view.
 func _fade_occluders() -> void:
 	var cam := camera.global_position
 	var to := target.global_position + Vector3(0, 1.0, 0) - cam
 	var len := to.length()
-	for w in get_tree().get_nodes_in_group(&"watchers"):
+	for w in get_tree().get_nodes_in_group(&"watchers") + get_tree().get_nodes_in_group(&"moshers"):
+		if w == target:
+			continue
 		var p: Vector3 = (w as Node3D).global_position + Vector3(0, 1.0, 0) - cam
 		var t := clampf(p.dot(to) / (len * len), 0.0, 1.0)
 		var off := (p - to * t).length()

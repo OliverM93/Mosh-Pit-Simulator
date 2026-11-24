@@ -1,5 +1,10 @@
 # Technische Architektur
 
+> **Godot-Neuentwicklung (D-032 – D-035):** Dieses Dokument beschreibt das Three.js-Projekt (Referenz). Die
+> Architektur des Godot-Projekts steht in `docs/GODOT_MIGRATION.md` (Abschnitte 6–8, 13) und `godot/README.md`.
+> Abhängigkeiten dort: Godot 4.5.1 (MIT) als Engine; Werkzeuge Blender/bpy (GPL), MakeHuman-Daten (CC0), CMU-Mocap,
+> Playwright/Chromium + ffmpeg nur für den Audio-Render. Keine Godot-Plugins.
+
 ## Technologien und Abhängigkeiten
 
 | Paket | Version | Zweck | Art |

@@ -28,6 +28,8 @@ var variant := "c1"
 var mass_kg := 80.0
 ## Divides incoming hits: >1 = harder to knock over (the player keeps control, D-034).
 var stability := 1.0
+## Seconds into a stagger/stumble after which steering or dodging takes control back (player: short, D-034).
+var recover_after := 99.0
 var clock := 0.0
 var loco := Locomotion.new()
 var moves: MoveController
@@ -100,6 +102,8 @@ func _physics_process(delta: float) -> void:
 		brain.think(self, delta)
 	var s := situation()
 	reactions.update(delta)
+	if reactions.active() and (move_input.length() > 0.6 or _presses.has(&"dodge")):
+		reactions.try_recover()
 	if reactions.active():
 		_presses.clear()
 	else:

@@ -67,6 +67,17 @@ func receive(dv: Vector3, from: Node3D) -> void:
 		_start(Kind.STUMBLE, &"stumble_m" if local.x > 0.0 else &"stumble", strength)
 
 
+## The body wants control back (stick or dodge): stagger/stumble end early once `body.recover_after` has passed.
+## Falls always play out. Returns true if the reaction ended.
+func try_recover() -> bool:
+	if (kind != Kind.STAGGER and kind != Kind.STUMBLE) or _time < body.recover_after:
+		return false
+	kind = Kind.NONE
+	body.animator.release_full(0.2)
+	body.current_move = &""
+	return true
+
+
 func update(dt: float) -> void:
 	balance = minf(1.0, balance + RECOVER_PER_SEC * dt)
 	if kind == Kind.NONE:

@@ -669,3 +669,37 @@ Claude delegiert → [CONTROLS.md](CONTROLS.md). Ursprüngliche Fragen zur Nachv
 6. **Timing-Prinzip:** Zeitwerte der Moves aus den Clips (Abschnitt 7.2) bestätigen.
 7. **Referenz-Hardware** für das 60-FPS-Ziel.
 8. **Repo:** Godot-Projekt unter `godot/` im selben Repo (Empfehlung) oder eigenes Repo; Git LFS ja/nein.
+
+---
+
+## 13. Stand des Vertical Slice (2026-11-24, D-035)
+
+Projekt: [`godot/`](../godot/README.md). Umgesetzt mit Godot 4.5.1, nur kostenlosen Quellen.
+
+| Slice-Anforderung | Stand | Beleg |
+| --- | --- | --- |
+| Kleine, eigenständige Location | ✅ The Basement: Ziegel/Beton/Holz (prozedurale PBR-Materialien mit Normal Maps), Bühne mit Amps, Drums, Banner, Truss mit 4 Spots, Glühbirne über dem Pit, Rohre, Flyer, Merch-Tisch, Exit-Schild | Screenshots (Software-Rendering) |
+| Vollständig steuerbarer Spieler | ✅ Momentum-Bewegung (Port), 8 Moves über die Steuerung aus CONTROLS.md, Puffer + Abbruchfenster | Unit-Tests, Smoke-Run |
+| 8–12 NPCs | ✅ 10 Mosher im Pit (gleicher Körper wie der Spieler, eigene Gehirne/Persönlichkeit) + 26 Zuschauer als Pit-Wand | Smoke-Run, Screenshots |
+| Idle-, Lauf-, Mosh-Animationen | 🟡 echte Mocap im Originaltempo (Stand, Gehen, Rennen, Spinkick, Tornado, Butterfly, Cartwheel, Sprung, Pogo, Armstoß, Stolpern, Fallen, Aufstehen). 2-Step = Charleston-Basis (Platzhalter), Windmill/Arm Swing/Headbang fehlen | Clip-Sheets, `test_clip_library` |
+| Übergänge | ✅ Überblendung Loco ↔ Move und Move → Move (zwei Slots), Schrittphasen-gekoppelte Fortbewegung | – (Owner-Abnahme nötig) |
+| Kollisionen / Körperkontakt | ✅ Kapseln (Jolt), Impulse aus Relativgeschwindigkeit und Masse, Reaktionen nach Stärke/Richtung/Balance, Pit-Wand schubst zurück | Smoke-Run: ≈ 40–48 Reaktionen in 15 s, davon 3–5 beim Spieler (Stolpern endet für den Spieler nach 0,35 s per Stick/Ausweichen) |
+| Erste Mosh-Interaktionen | ✅ Schubsen (zielt automatisch), Kicks treffen Umstehende, NPCs schubsen sich und den Spieler | Smoke-Run |
+| Kamera | ✅ fest Richtung Band, Federung, Vorausblick, Umschauen ±40°, nah/weit, Verdecker werden transparent | Screenshots |
+| Licht/Atmosphäre | ✅ Volumen-Nebel, farbige Spots mit Lichtkegeln, AgX-Tonemapping, Glow, SSAO, Schatten (Glühbirne + 2 Spots); Musik + Crowd-Loop + Aufprall-Sounds | Screenshots |
+| Stabile Performance | 🟡 CPU belegt: ≈ 2,0 ms/Frame (p95 2,7 ms) für 10 + 26 Figuren, 4,9 ms für 30 + 80 (Xeon 2,1 GHz, ohne Rendering). GPU: ≈ 650 Draw Calls, 0,8–0,9 Mio. Dreiecke – **FPS auf GTX-1060-Klasse muss der Owner messen** (HUD zeigt FPS/Draw Calls) | `tools/dev/perf.gd` |
+| Fußrutschen < 3 cm | 🟡 mit Fuß-IK 0,9–2,7 cm (Gehen bis Rennen), Sprint 3,0–3,7 cm (ohne IK bis 5,8 cm) | `tools/dev/foot_slide.gd` |
+| Windows-Build | ✅ `MoshPit.exe` (107 MB, PCK eingebettet) wird gebaut; das exportierte Paket läuft headless fehlerfrei (Linux-Runtime). Start unter Windows selbst: Owner (Wine läuft in der Cloud-Umgebung nicht) | Export + `--main-pack`-Lauf |
+
+**Nicht im Slice (bewusst, Qualität vor Umfang):** Combo-/Punktesystem, HUD im THPS-Stil, Musik-Boni, Hype, Menüs,
+Spielstand (Phase 4, Logik existiert im Three.js-Projekt); Windmill/Arm Swing/Headbang (brauchen Aufnahmen);
+Hochziehen gefallener Personen (CMU 22_01/23_01 als Kandidat vorhanden); Crowd-Surfer, Circle Pit.
+
+**Bekannte Schwächen (ehrlich):** Die Figuren sind weiterhin die MakeHuman-Modelle (keine Haare, keine Finger,
+Kleidung ohne Normal Maps) – nicht PS3-Niveau. Der 2-Step ist stilistisch Charleston. Die Zuschauer haben nur
+wenige Loops (Stand, Pogo, Jubeln). Aufstehen ist langsam (ruhige CMU-Aufnahme). Alles ist nur in
+Software-Rendering gesehen; Bewegungsgefühl und GPU-Performance kann nur ein Test auf echter Hardware zeigen.
+
+**Nächste Schritte nach Owner-Feedback:** (1) Owner spielt den Slice (Gamepad + Tastatur) und misst FPS.
+(2) Eigene Aufnahmen der Hardcore-Moves mit FreeMoCap (2-Step, Windmill, Headbang, Schubser) oder Mixamo-Ergänzungen
+lokal. (3) Figuren-Upgrade (Haare, Kleidung, Finger-Rig). (4) Gameplay-Migration (Phase 4).

@@ -93,9 +93,12 @@ Nach jeder größeren Aufgabe:
 
 ## Aktueller Stand (2026-11-24)
 
-**Godot-Migration beschlossen** (D-032, Branch `claude/godot-migration`): Analyse und Plan in
-`docs/GODOT_MIGRATION.md`, Migration wartet auf die Owner-Entscheidungen dort (Abschnitt 12). Bis dahin gilt der
-Three.js-Stand unten; ihn nicht verändern.
+**Godot-Neuentwicklung** (D-032 – D-035, Branch `claude/godot-migration`): Projekt unter `godot/` (Godot 4.5.1,
+GDScript, Windows-PC, null Budget). Vertical Slice steht, wartet auf Owner-Test auf echter Hardware. Arbeitsweise,
+Befehle und Aufbau: `godot/README.md`; Plan und Stand: `docs/GODOT_MIGRATION.md`; Steuerung: `docs/CONTROLS.md`.
+Neue Arbeit findet in `godot/` statt. Das Three.js-Projekt (Rest dieses Dokuments) bleibt unverändert als Referenz.
+Godot-Regeln: Gameplay-Logik als reine Klassen mit Tests (`godot/tests`), Animationen nur aus echter Bewegung
+(Mocap/Aufnahmen, nie gestreckt), kostenlose Assets mit geprüfter Lizenz, vor jedem Commit Tests + Smoke-Run.
 
 **MOSH PIT 2.0** (D-028, Branch `claude/mosh-pit-2-prototype`): THPS-artiger Prototyp – eine Location, Blender-Spieler
 mit Mocap (Kampfhaltung, Pose-Matching, IK-Moves, D-029), feste Kamera Richtung Band, Momentum-Movement, sechs Moves (hybride Eingabe, Ebenen, Phasen, Cancel-Fenster),

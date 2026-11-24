@@ -8,6 +8,7 @@ extends Node3D
 var player: Mosher
 var crowd: CrowdDirector
 var hud: DebugHud
+var audio: SliceAudio
 
 
 func _ready() -> void:
@@ -31,6 +32,7 @@ func _ready() -> void:
 	player.global_position = Basement.PIT_CENTER + Vector3(0, 0, 1.2)
 	player.brain = PlayerBrain.new()
 	player.stability = 1.6
+	player.recover_after = 0.35
 	player.add_to_group(&"moshers")
 	player.add_to_group(&"player")
 	crowd.spawn(library)
@@ -38,15 +40,27 @@ func _ready() -> void:
 	cam.name = "PitCamera"
 	cam.target = player
 	add_child(cam)
+	audio = SliceAudio.new()
+	audio.name = "Audio"
+	add_child(audio)
 	hud = DebugHud.new()
 	hud.player = player
 	add_child(hud)
 	for m in get_tree().get_nodes_in_group(&"moshers"):
 		(m as Mosher).reacted.connect(_on_reacted)
 		(m as Mosher).hit_landed.connect(_on_hit)
+		(m as Mosher).move_started.connect(_on_move_started)
+
+
+func _on_move_started(m: Mosher, move: MoveController.ActiveMove) -> void:
+	if move.def.category == &"kick" or move.def.category == &"acro":
+		audio.play_at(&"whoosh", m.global_position + Vector3(0, 1.0, 0), -8.0 if m != player else -3.0)
 
 
 func _on_reacted(m: Mosher, kind: StringName, strength: float) -> void:
+	audio.impact(m.global_position, strength)
+	if kind == &"fall":
+		audio.play_at(&"ooh", m.global_position, -6.0)
 	if m == player or strength > 2.0:
 		hud.log_event("%s: %s (%.1f m/s)" % [m.name, kind, strength])
 

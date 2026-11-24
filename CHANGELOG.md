@@ -5,6 +5,15 @@ Versionierung nach [SemVer](https://semver.org/lang/de/) (vor 1.0 kann sich alle
 
 ## [Unreleased]
 
+### Godot-Migration – Vertical Slice (Branch `claude/godot-migration`, D-033 – D-035)
+
+- Neues Godot-4.5.1-Projekt unter `godot/` (Three.js-Projekt unverändert): The Basement mit Volumen-Licht, spielbarer
+  Mosher, 10 NPC-Mosher + Zuschauerwand, Kontakte mit Ausfallschritt/Stolpern/Fallen/Aufstehen, Schubsen, Kicks,
+  Sprung + Luft-Kick, Ausweichen, Kamera Richtung Band mit Umschauen, Musik und Aufprall-Sounds.
+- Animationen aus CMU-Mocap im aufgenommenen Tempo (60 Hz), ohne Pose-Matching, mit Root Motion; Fuß-IK gegen Rutschen.
+- Steuerungskonzept für Gamepad und Tastatur (`docs/CONTROLS.md`), Belegung zentral in `input_config.gd`.
+- Headless-Tests, Smoke-Run, Mess-Werkzeuge (Fußrutschen, CPU-Kosten), CI-Workflow `godot.yml`, Windows-Export.
+
 ### Godot-Migration – Analyse und Plan (Branch `claude/godot-migration`, D-032)
 
 - `docs/GODOT_MIGRATION.md`: Bestandsaufnahme, Systembewertung, Ursachenanalyse der Animationsprobleme (mit

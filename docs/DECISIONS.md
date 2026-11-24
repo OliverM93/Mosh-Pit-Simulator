@@ -7,6 +7,36 @@ Format: **Datum · Entscheidung** – Begründung · Betroffene Systeme · Alter
 
 ---
 
+### D-035 · 2026-11-24 · Technik des Godot-Vertical-Slice
+- **Animationen nur aus CMU-Mocap** (frei, auch kommerziell), gebaut mit `godot/tools/anim/build_anims.py`:
+  Keys alle 1/60 s bei 60 fps (behebt die 25-%-Verlangsamung der Three.js-Pipeline), **kein Pose-Matching**, Root
+  Motion bleibt im Clip, Kontakt-/Luftphasen und Stoßrichtung werden aus der Bewegung gemessen (`anims_meta.json`).
+  Einzige Ausnahme vom Tempo: keine – Clips werden nur ausgeschnitten, nie gestreckt.
+- **Move-Timing aus dem Clip** (D-033): `MoveController` (GDScript-Port) nimmt Länge, Landung, Abbruchfenster und
+  Treffer-Zeitpunkt aus den Clip-Daten; die Move-Daten wählen nur aus, welcher Moment zählt.
+- **Root Motion getrennt:** `ClipLibrary` verschiebt die horizontale Hüftbewegung der One-Shots auf eine eigene
+  `RootMotion`-Spur (AnimationTree extrahiert sie, der Körper/Kapsel folgt); Hüfthöhe bleibt am Skelett.
+- **Fortbewegung distanzgekoppelt:** Walk/Run teilen eine Schrittphase, die mit der echten Geschwindigkeit läuft, und
+  sind auf den linken Fußaufsatz ausgerichtet. Dazu **Fuß-Verriegelung per eigener Zwei-Knochen-IK**
+  (`FootLock`, `SkeletonModifier3D` – Godot 4.5 hat keinen fertigen Two-Bone-IK-Modifier). Gemessen
+  (`tools/dev/foot_slide.gd`): ohne Lock 1,5–5,8 cm, mit Lock 0,9–3,7 cm Rutschen pro Bodenkontakt.
+- **AnimationTree im Code gebaut** (diff-bar): Locomotion, zwei Move-Slots (a/b) für Move→Move-Überblendung,
+  Oberkörper-Slot mit Knochenfilter.
+- **Ein Körper für alle:** `Mosher` (CharacterBody3D) für Spieler und Pit-NPCs; Gehirne füllen nur Absichten.
+  Kontakte erzeugen Impulse; `MosherReactions` wählt absorbieren / Ausfallschritt / Stolpern / Fallen + Aufstehen
+  nach Stärke, Richtung und Balance. Spieler `stability` 1,6 (Kontrolle zuerst, D-034).
+- **2-Step = Charleston-Kick-Steps (CMU 93_03)** als Platzhalter: echte Aufnahme mit Gewicht und Rhythmus, aber
+  Jazz-Stil – ersetzt, sobald eine eigene Aufnahme (FreeMoCap) existiert. **Schubser = gerader Armstoß aus dem
+  Boxen (CMU 13_17)**, beim Laden automatisch auf die gemessene Stoßrichtung gedreht; deshalb Ganzkörper-Move
+  (Korrektur zu D-034: nicht Oberkörper-Ebene). Windmill/Arm Swing fehlen im Slice (kein freier Clip).
+- **Audio:** der vorhandene Synth-Song und die Synth-SFX werden offline in Chromium gerendert (OGG); Aufprall-Sounds
+  folgen der Kontaktstärke.
+- **Tests ohne Fremd-Framework:** eigener Runner (`tests/run_tests.gd`), Smoke-Run der echten Szene, CI-Workflow
+  `.github/workflows/godot.yml`. **Physik: Jolt** (in Godot 4.5 eingebaut).
+- **Alternativen:** Mixamo (nicht in der Cloud erreichbar, Weitergabe-Bedingungen), gdUnit4/GUT (zusätzliche
+  Abhängigkeit), Godot-Retargeting über `SkeletonProfileHumanoid` (erst nötig, wenn Clips anderer Skelette kommen),
+  Root Motion für Fortbewegung (weniger direkt steuerbar als die THPS-Bewegung).
+
 ### D-034 · 2026-11-24 · Steuerungskonzept für das Godot-Projekt
 - **Anlass:** Owner überlässt die Steuerung Claude (D-033) – Vorgabe: präzise, Tastatur/Maus + Gamepad, Springen,
   Ausweichen, Schubsen, Interaktion, Combos ohne gegenseitiges Blockieren, zentral konfigurierbar.
