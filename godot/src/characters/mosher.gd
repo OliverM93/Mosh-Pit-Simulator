@@ -41,6 +41,9 @@ var use_foot_lock := true
 var model: Node3D
 var push_velocity := Vector3.ZERO
 var current_move: StringName = &""
+## Pending quick turn towards a target (shove aim): turned over a few frames instead of snapping.
+var _turn_to := NAN
+const TURN_RATE := 16.0
 ## PlayerBrain / NpcBrain: `think(body, delta)` fills the intent fields before the body moves.
 var brain: RefCounted
 
@@ -75,6 +78,11 @@ func setup(variant_id: String, library: ClipLibrary, body_mass := 80.0) -> void:
 
 func press(action: StringName) -> void:
 	_presses.append(action)
+
+
+## Turn quickly (≈ 0.1 s for 90°) towards `yaw` – used when aiming at someone, avoids a visible snap.
+func turn_towards(yaw: float) -> void:
+	_turn_to = yaw
 
 
 func face(yaw: float) -> void:
@@ -123,6 +131,13 @@ func _physics_process(delta: float) -> void:
 	elif moves.upper:
 		mod = Locomotion.Modifier.of(moves.upper.def)
 	loco.update(delta, move_input if not reactions.active() else Vector2.ZERO, sprint, mod)
+	if not is_nan(_turn_to):
+		var diff := wrapf(_turn_to - loco.yaw, -PI, PI)
+		var step := clampf(diff, -TURN_RATE * delta, TURN_RATE * delta)
+		loco.yaw += step
+		loco.heading = loco.yaw if loco.speed < 0.5 else loco.heading
+		if absf(diff - step) < 0.01:
+			_turn_to = NAN
 	rotation.y = loco.yaw
 	var rm := global_basis * animator.consume_root_motion()
 	var v := loco.velocity()
@@ -236,4 +251,4 @@ func _aim_at_nearest(radius: float, half_angle: float) -> void:
 			best_d = dist
 	if best:
 		var d := best.global_position - global_position
-		face(atan2(d.x, d.z))
+		turn_towards(atan2(d.x, d.z))

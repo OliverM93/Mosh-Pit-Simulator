@@ -92,7 +92,7 @@ func _pick_mode(body: Mosher) -> void:
 
 func _face_and_shove(body: Mosher, toward: Vector3) -> void:
 	_shove_cooldown = rng.randf_range(2.0, 4.0)
-	body.face(atan2(toward.x, toward.z))
+	body.turn_towards(atan2(toward.x, toward.z))
 	body.press(&"interact")
 
 
