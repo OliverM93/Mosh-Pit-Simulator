@@ -30,7 +30,7 @@ static func all() -> Array[MoveDef]:
 		clip = &"cartwheel", alternate = true, steer = 0.15, speed_factor = 0.9, carry = 0.9,
 		points = 450, difficulty = 1.3, space = 1.0, risky = true, hint = "Jump + left/right"}))
 	list.append(MoveDef.make({
-		id = &"jump", display_name = "Jump", category = &"acro", when_grounded = true, clip = &"jump",
+		id = &"jump", display_name = "Jump", category = &"acro", when_grounded = true, clip = &"jump", air_cancel_into = [&"kick"],
 		root_motion = false, steer = 0.6, speed_factor = 1.0, carry = 0.95, points = 40, difficulty = 0.3,
 		space = 0.5, hint = "Jump (Kick in the air = Butterfly)"}))
 	list.append(MoveDef.make({

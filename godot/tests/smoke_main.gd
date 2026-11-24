@@ -47,7 +47,7 @@ func _process(_delta: float) -> bool:
 	var errors := []
 	if main.player.global_position.distance_to(start_pos) < 1.5:
 		errors.append("player barely moved")
-	for id in [&"spinkick", &"two_step", &"shove", &"jump", &"dodge"]:
+	for id in [&"spinkick", &"two_step", &"shove", &"jump", &"butterfly_kick", &"dodge"]:
 		if not started.has(id):
 			errors.append("move never started: %s" % id)
 	if reactions == 0:

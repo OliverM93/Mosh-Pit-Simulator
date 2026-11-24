@@ -5,7 +5,7 @@ class FakeClips:
 	var lengths := {&"two_step": 1.4, &"spinkick": 0.8, &"spinkick_m": 0.8, &"jump": 1.2, &"butterfly_kick": 1.0,
 		&"butterfly_kick_m": 1.0, &"shove": 0.7, &"shove_m": 0.7, &"cartwheel": 0.9, &"cartwheel_m": 0.9,
 		&"tornado_kick": 0.9, &"tornado_kick_m": 0.9, &"dodge_back": 1.0}
-	var airs := {&"spinkick": [[0.2, 0.4]], &"spinkick_m": [[0.2, 0.4]], &"jump": [[0.35, 0.75]],
+	var airs := {&"shove": [[0.0, 0.1], [0.5, 0.6]], &"spinkick": [[0.2, 0.4]], &"spinkick_m": [[0.2, 0.4]], &"jump": [[0.35, 0.75]],
 		&"butterfly_kick": [[0.2, 0.75]], &"butterfly_kick_m": [[0.2, 0.75]]}
 	func length(c): return lengths.get(c, 1.0)
 	func get_info(c):
@@ -97,8 +97,10 @@ func test_kick_in_air_enters_at_airborne_phase() -> bool:
 	eq(mc.full.def.id, &"jump")
 	mc.update(0.4, S.of(Vector2.ZERO, 0.0, true))
 	check(mc.airborne(0.4), "airborne in the jump")
-	# The jump is cancellable only after landing; a buffered kick in the air still resolves to butterfly.
-	eq(mc.resolve(&"kick", S.of(Vector2.ZERO, 0.0, true)).id, &"butterfly_kick")
+	# Kick during the flight phase takes over the jump and enters the butterfly kick at its airborne phase.
+	mc.press(&"kick", 0.4, S.of(Vector2.ZERO, 0.0, true))
+	eq(mc.full.def.id, &"butterfly_kick", "jump → kick in the air = butterfly")
+	near(mc.full.offset, 0.2, 1e-4, "entered at the clip's takeoff")
 	return true
 
 
@@ -108,4 +110,14 @@ func test_interrupt_stops_everything() -> bool:
 	mc.press(&"footwork", 0.0, s)
 	mc.interrupt(0.2)
 	check(mc.full == null and mc.upper == null, "all layers stopped")
+	return true
+
+
+func test_small_hops_in_ground_moves_are_not_airborne() -> bool:
+	var mc := _mc()
+	var s := S.of(Vector2.ZERO, 0.0)
+	mc.press(&"interact", 0.0, s)
+	check(not mc.airborne(0.55), "boxing footwork hop is not a flight phase")
+	mc.press(&"acro", 0.6, S.of(Vector2.ZERO, 0.0, mc.airborne(0.6)))
+	eq(mc.full.def.id, &"jump", "jump out of the shove's cancel window")
 	return true

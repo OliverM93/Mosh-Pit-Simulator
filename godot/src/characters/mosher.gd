@@ -22,6 +22,7 @@ var stick := Vector2.ZERO  ## x = right, y = towards the band (move selection)
 var sprint := false
 var held: Array[StringName] = []
 var _presses: Array[StringName] = []
+var _held_presses_age := 0.0
 
 # --- State ---
 var variant := "c1"
@@ -110,14 +111,19 @@ func _physics_process(delta: float) -> void:
 		brain.think(self, delta)
 	var s := situation()
 	reactions.update(delta)
-	if reactions.active() and (move_input.length() > 0.6 or _presses.has(&"dodge")):
+	# Steering, dodging or any move press takes control back from a stagger/stumble (after `recover_after`).
+	if reactions.active() and (move_input.length() > 0.6 or not _presses.is_empty()):
 		reactions.try_recover()
 	if reactions.active():
-		_presses.clear()
+		# Keep presses for the input buffer window: they fire as soon as the body is free again.
+		_held_presses_age += delta
+		if _held_presses_age > MoveController.BUFFER_SEC:
+			_presses.clear()
 	else:
 		for a in _presses:
 			moves.press(a, clock, s)
 		_presses.clear()
+		_held_presses_age = 0.0
 		for a in held:
 			moves.hold(a, clock, s)
 		moves.update(clock, s)

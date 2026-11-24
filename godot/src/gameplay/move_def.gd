@@ -36,6 +36,8 @@ extends Resource
 @export var hit_at := -1.0
 @export var repeat_on_hold := false
 @export var cancel_into: Array[StringName] = [&"footwork", &"arms", &"kick", &"acro", &"interact", &"dodge"]
+## Categories that may take over during the flight phase already (jump → kick = Butterfly Kick).
+@export var air_cancel_into: Array[StringName] = []
 
 @export_group("Movement while running")
 @export_range(0, 1) var steer := 0.3
@@ -58,5 +60,9 @@ extends Resource
 static func make(props: Dictionary) -> MoveDef:
 	var d := MoveDef.new()
 	for k in props:
-		d.set(k, props[k])
+		var current = d.get(k)
+		if current is Array:
+			(current as Array).assign(props[k])  # typed arrays reject plain Array literals in set()
+		else:
+			d.set(k, props[k])
 	return d

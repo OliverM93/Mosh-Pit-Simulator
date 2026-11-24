@@ -12,6 +12,7 @@ const SIDE_DEADZONE := 0.5
 const DEFAULT_CANCEL := 0.7
 ## After landing the body needs this long to absorb the impact before the next move.
 const LANDING_RECOVERY := 0.1
+const AIR_CATEGORIES: Array[StringName] = [&"acro", &"kick"]
 
 
 class Situation:
@@ -194,6 +195,8 @@ func _try_start(category: StringName, time: float, s: Situation, _press_time := 
 
 
 func _can_cancel(m: ActiveMove, into: StringName, time: float) -> bool:
+	if m.def.air_cancel_into.has(into) and _in_air(m, time):
+		return true
 	return m.elapsed(time) >= m.cancel_at and m.def.cancel_into.has(into)
 
 
@@ -224,7 +227,9 @@ func _begin(def: MoveDef, time: float, s: Situation, linked: bool, layered: bool
 		length -= m.offset
 	m.length = length
 	# Phases in move time (clip time minus the entry offset).
-	if air.size() > 0 and not def.half_cycle:
+	# Only jumps, kicks and acrobatics have a flight phase; small hops inside other captures (boxing footwork) do not
+	# make the body "airborne" for move selection.
+	if air.size() > 0 and not def.half_cycle and AIR_CATEGORIES.has(def.category):
 		var land: float = air[air.size() - 1][1] - m.offset
 		if land > 0.0:
 			m.land_at = land
@@ -246,6 +251,8 @@ func _begin(def: MoveDef, time: float, s: Situation, linked: bool, layered: bool
 
 
 func _in_air(m: ActiveMove, time: float) -> bool:
+	if not AIR_CATEGORIES.has(m.def.category):
+		return false
 	var info = clips.get_info(m.clip)
 	if info == null or info.air.size() == 0:
 		return false
