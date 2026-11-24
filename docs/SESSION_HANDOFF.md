@@ -15,7 +15,7 @@ Kurz und praktisch. Nach jeder größeren Aufgabe aktualisieren (älteren Stand 
 - Vertical Slice gebaut und geprüft: Basement-Location, steuerbarer Spieler, 10 Pit-NPCs + 26 Zuschauer,
   CMU-Mocap im Originaltempo, Root Motion, Fuß-IK, Kontakt-Reaktionen, Schubsen, Kamera, Licht, Musik/SFX.
   Messwerte und Lücken: `docs/GODOT_MIGRATION.md` Abschnitt 13.
-- 15 Unit-Tests + Smoke-Run grün; Windows-Export gebaut, exportiertes Paket läuft headless.
+- 15 Unit-Tests + Smoke-Run grün (lokal und in der GitHub-CI `godot.yml`); Windows-Export gebaut, exportiertes Paket läuft headless.
 
 ## Offene Punkte
 
@@ -24,6 +24,8 @@ Kurz und praktisch. Nach jeder größeren Aufgabe aktualisieren (älteren Stand 
 - Hardcore-Moves ohne freie Aufnahme: 2-Step ist Charleston-Platzhalter; Windmill, Arm Swing, Headbang fehlen.
   Weg: eigene Aufnahmen (FreeMoCap, kostenlos) oder Mixamo lokal beim Owner.
 - Figuren noch MakeHuman (keine Haare/Finger) – Figuren-Upgrade ist ein eigener Block.
+- Steuerung: das Umbelegungs-Menü fehlt noch (Presets „Standard“/„Klassisch“ nur per
+  `input_config.gd`/`user://input.cfg`); Headbang-Taste ist belegt, aber ohne Animation.
 - Gameplay-Migration (Combo, Musik-Boni, Hype, HUD, Menüs, Save) = Phase 4, erst nach Slice-Abnahme.
 
 ## Nächster empfohlener Schritt

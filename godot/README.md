@@ -19,7 +19,7 @@ Steuerung: [`docs/CONTROLS.md`](../docs/CONTROLS.md). Das Three.js-Projekt im Re
 | Kick (in der Luft: Butterfly, mit Anlauf: Tornado) | B | L |
 | Schubsen | RB | O |
 | Ausweichen | LB | U |
-| Umschauen / Kamera nah-weit | rechter Stick / R3 | – / V |
+| Umschauen / Kamera nah-weit | rechter Stick / R3 | rechte Maustaste + Maus / V |
 
 Die Belegung „Klassisch“ (Q/E/R wie im 2.0-Prototyp) ist als Preset vorhanden (`src/input/input_config.gd`).
 

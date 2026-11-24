@@ -18,6 +18,8 @@ var far_view := false
 var _peek := 0.0
 var _focus := Vector3.ZERO
 var _zoom := 0.0
+## Mouse peek: hold the right mouse button and move the mouse (springs back on release).
+var _mouse_peek := 0.0
 
 
 func _ready() -> void:
@@ -31,12 +33,19 @@ func _ready() -> void:
 		_focus = target.global_position
 
 
+func _unhandled_input(event: InputEvent) -> void:
+	if event is InputEventMouseMotion and (event.button_mask & MOUSE_BUTTON_MASK_RIGHT):
+		_mouse_peek = clampf(_mouse_peek + event.relative.x * 0.004, -1.0, 1.0)
+
+
 func _process(delta: float) -> void:
 	if target == null:
 		return
 	if Input.is_action_just_pressed(&"camera_zoom"):
 		far_view = not far_view
-	var look := Input.get_axis(&"look_left", &"look_right")
+	if not Input.is_mouse_button_pressed(MOUSE_BUTTON_RIGHT):
+		_mouse_peek = move_toward(_mouse_peek, 0.0, delta * 3.0)
+	var look := clampf(Input.get_axis(&"look_left", &"look_right") + _mouse_peek, -1.0, 1.0)
 	_peek = lerpf(_peek, look * PEEK_MAX, 1.0 - exp(-(8.0 if absf(look) > 0.05 else 4.0) * delta))
 	_zoom = move_toward(_zoom, 1.0 if far_view else 0.0, delta * 2.5)
 	var v := Vector3.ZERO

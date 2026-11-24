@@ -9,6 +9,8 @@ var started := {}
 var reactions := 0
 var player_reactions := {}
 var start_pos := Vector3.ZERO
+var sprint_dist := 0.0
+var _prev := Vector3.ZERO
 var plan := [
 	[20, 80, &"move_forward"], [80, 140, &"move_left"], [100, 140, &"sprint"], [150, 153, &"kick"],
 	[220, 320, &"footwork"], [330, 333, &"interact"], [380, 383, &"jump"], [405, 408, &"kick"],
@@ -31,6 +33,10 @@ func _process(_delta: float) -> bool:
 				reactions += 1
 				if b == main.player:
 					player_reactions[k] = player_reactions.get(k, 0) + 1)
+	if frame >= 100 and frame <= 140:
+		if frame > 100:
+			sprint_dist += Vector2(main.player.global_position.x - _prev.x, main.player.global_position.z - _prev.z).length()
+		_prev = main.player.global_position
 	for p in plan:
 		if frame == p[0]:
 			Input.action_press(p[2])
@@ -51,6 +57,7 @@ func _process(_delta: float) -> bool:
 		if is_nan(p.x) or is_nan(p.z) or absf(p.x) > 7.0 or absf(p.z) > 6.5 or p.y < -0.5:
 			errors.append("%s out of the room at %s" % [m.name, p])
 	print("moves started: ", started)
+	print("player sprint through the pit: %.2f m/s" % (sprint_dist / (40.0 / 60.0)))
 	print("reactions: ", reactions, "  of the player: ", player_reactions)
 	if errors.is_empty():
 		print("SMOKE OK")

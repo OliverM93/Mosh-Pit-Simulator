@@ -206,7 +206,8 @@ func _resolve_contacts() -> void:
 			continue
 		var share := mass_kg / (mass_kg + other.mass_kg)
 		other.receive_impulse(n * maxf(closing, mine) * share * 1.1, self)
-		loco.slide_along(-n)
+		# Bodies give way: the pusher loses speed by how much the other one weighs (no sticking to people).
+		loco.speed *= 1.0 - 0.5 * (1.0 - share) / maxf(1.0, stability)
 
 
 ## The pit wall of people pushes back: fast runs into it bounce the body back into the pit.

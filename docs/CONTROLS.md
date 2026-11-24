@@ -29,7 +29,7 @@ Umsetzung: Input-Map-Aktionen in `godot/project.godot`, Belegungs-Presets in `go
 | Schubsen · Interagieren | RB / R1 | O | F |
 | Ausweichen | LB / L1 | U | C |
 | Headbang (halten) | LT / L2 | E | X |
-| Umschauen | rechter Stick | Maus (optional) | Maus (optional) |
+| Umschauen | rechter Stick | rechte Maustaste halten + Maus | rechte Maustaste halten + Maus |
 | Kamera nah/weit | R3 | V | V |
 | Pause | Start / Options | Esc | Esc |
 | Moveliste | View / Share | Tab | Tab |

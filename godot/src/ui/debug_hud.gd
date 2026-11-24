@@ -37,5 +37,5 @@ func _process(delta: float) -> void:
 	for e in _events:
 		lines.append(e)
 	lines.append("")
-	lines.append("Move WASD/stick · Sprint Shift/RT · Jump Space/A · 2-Step J/X · Kick L/B · Shove O/RB · Dodge U/LB · Peek right stick · Zoom V/R3")
+	lines.append("Move WASD/stick · Sprint Shift/RT · Jump Space/A · 2-Step J/X · Kick L/B · Shove O/RB · Dodge U/LB · Peek right stick/RMB · Zoom V/R3")
 	_label.text = "\n".join(lines)
